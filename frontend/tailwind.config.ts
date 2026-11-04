@@ -7,6 +7,8 @@ const config: Config = {
     colors: {
       transparent: 'transparent',
       current: 'currentColor',
+      white: '#FFFFFF',
+      black: '#000000',
       bg: 'var(--color-bg)',
       sidebar: 'var(--color-sidebar)',
       surface: 'var(--color-surface)',

@@ -148,7 +148,7 @@ export const ThreadDesk: React.FC = () => {
       <div className="p-2.5 md:px-6 md:pb-3 md:pt-2 border-t border-line bg-surface/90 backdrop-blur shrink-0 relative">
         <form onSubmit={handleSubmit} className="max-w-prose mx-auto">
           {/* Main unified compact input bar with futuristic blue border */}
-          <div className="relative flex items-center bg-bg border border-mark/45 shadow-[0_0_12px_rgba(37,99,235,0.07)] dark:shadow-[0_0_14px_rgba(56,189,248,0.12)] rounded-lg transition-all duration-200 hover:border-mark/70 focus-within:border-mark focus-within:ring-2 focus-within:ring-mark/20 focus-within:shadow-[0_0_16px_rgba(37,99,235,0.15)]">
+          <div className="relative flex items-center bg-bg border border-mark/45 shadow-[0_0_12px_rgba(37,99,235,0.07)] dark:shadow-[0_0_14px_rgba(56,189,248,0.12)] rounded-lg px-2.5 py-1.5 transition-all duration-200 hover:border-mark/70 focus-within:border-mark focus-within:ring-2 focus-within:ring-mark/20 focus-within:shadow-[0_0_16px_rgba(37,99,235,0.15)]">
             <input
               ref={inputRef}
               type="text"
@@ -160,11 +160,11 @@ export const ThreadDesk: React.FC = () => {
                   ? 'Searching documents & verifying claims…'
                   : 'Ask a question about your documents…'
               }
-              className="w-full pl-3 pr-2 py-2 bg-transparent text-ink text-xs font-sans placeholder:text-muted focus:outline-none disabled:opacity-50"
+              className="flex-1 py-1 px-1 bg-transparent text-ink text-xs font-sans placeholder:text-muted focus:outline-none disabled:opacity-50 min-w-0"
             />
 
             {/* Actions cluster inside input */}
-            <div className="flex items-center space-x-1 pr-1.5 shrink-0">
+            <div className="flex items-center space-x-1.5 shrink-0 ml-1.5">
               {/* Subtle RAG tuning button */}
               <div className="relative" ref={tuneRef}>
                 <button
@@ -222,13 +222,13 @@ export const ThreadDesk: React.FC = () => {
                 )}
               </div>
 
-              {/* Compact professional Ask button */}
+              {/* Compact professional Ask button with equal symmetric padding */}
               <button
                 type="submit"
                 disabled={isSubmitting || !input.trim()}
                 title="Send question (Enter)"
                 aria-label="Ask"
-                className={`h-6 px-2.5 flex items-center justify-center text-xs font-sans font-medium rounded-md transition-all duration-150 shrink-0 ${
+                className={`h-6 px-3 flex items-center justify-center text-xs font-sans font-semibold rounded-md transition-all duration-150 shrink-0 select-none ${
                   input.trim() && !isSubmitting
                     ? 'bg-mark text-white hover:bg-mark-hover shadow-xs cursor-pointer'
                     : 'bg-elevated text-muted cursor-not-allowed opacity-50'
