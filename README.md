@@ -1,6 +1,6 @@
 # Knovex AI : Enterprise Multi-Tenant RAG Document Chatbot
 
-> **AI Engineering Portfolio Project** — Production-grade RAG with Grok (xAI), Qdrant Hybrid Search, LangGraph, CrossEncoder Reranking and multi-tenant isolation.
+> **AI Engineering Project** : Production-grade RAG with Grok (xAI), Qdrant Hybrid Search, LangGraph, CrossEncoder Reranking and multi-tenant isolation.
 
 ---
 
@@ -33,7 +33,7 @@ Grok (ChatXAI / grok-2-latest)
 
 ### Key Design Decisions
 - **Hybrid Retrieval**: Dense (`all-MiniLM-L6-v2`, 384-dim Cosine) + Sparse (`Qdrant/bm25` via FastEmbed) fused with native Qdrant RRF
-- **Tenant Isolation**: Every DB query and Qdrant search is filtered by `tenant_id` — server-side only, never trusted from client
+- **Tenant Isolation**: Every DB query and Qdrant search is filtered by `tenant_id` server-side only, never trusted from client
 - **Grounded Generation**: Grok is given ONLY retrieved chunks as context. Declines to answer when evidence is insufficient
 - **Async Ingestion**: Celery + Redis; idempotent with UUID5 point IDs; retries with backoff; status tracked in PostgreSQL
 
@@ -180,7 +180,7 @@ Start-Sleep -Seconds 10
 | `test_graph.py` | LangGraph nodes (sufficient/insufficient evidence), citation accuracy |
 | `test_api.py` | Register/login, document upload, tenant isolation at API level, chat flow |
 
-> ⚠️ `test_vector_store.py::test_tenant_isolation_filter` downloads `all-MiniLM-L6-v2` and `Qdrant/bm25` from HuggingFace on first run — takes ~2 min. Models are cached afterwards.
+> `test_vector_store.py::test_tenant_isolation_filter` downloads `all-MiniLM-L6-v2` and `Qdrant/bm25` from HuggingFace on first run — takes ~2 min. Models are cached afterwards.
 
 ---
 
@@ -192,7 +192,7 @@ Start-Sleep -Seconds 10
 .\.venv\Scripts\python.exe -m evaluation.run_evaluation
 ```
 
-> ⚠️ Synthetic dataset — **not human-verified ground truth**. Used only to compare retrieval modes.
+> Synthetic dataset — **not human-verified ground truth**. Used only to compare retrieval modes.
 
 ---
 
@@ -229,12 +229,12 @@ docker-compose up --build -d
 
 | Requirement | Status | Action Needed |
 |------------|--------|---------------|
-| `XAI_API_KEY` | ⚠️ Required for live Grok | Get from [x.ai](https://x.ai/) and add to `.env` |
-| PostgreSQL | ⚠️ Must be running | `docker-compose up postgres -d` |
-| Redis | ⚠️ Must be running | `docker-compose up redis -d` |
-| Qdrant | ⚠️ Must be running | `docker-compose up qdrant -d` |
+| `XAI_API_KEY` |  Required for live Grok | Get from [x.ai](https://x.ai/) and add to `.env` |
+| PostgreSQL | Must be running | `docker-compose up postgres -d` |
+| Redis |  Must be running | `docker-compose up redis -d` |
+| Qdrant |  Must be running | `docker-compose up qdrant -d` |
 | `HF_TOKEN` | Optional | Set to avoid HuggingFace rate limits on first model download |
-| Docker Desktop | ⚠️ Required | Must be running for docker-compose commands |
+| Docker Desktop |  Required | Must be running for docker-compose commands |
 
 > When `XAI_API_KEY` is not configured, the API returns a mock answer that shows the retrieved context with a note to configure the key. All retrieval and reranking still works correctly.
 
