@@ -1,4 +1,4 @@
-# Knovex AI — Enterprise Multi-Tenant RAG Document Chatbot
+# Knovex AI : Enterprise Multi-Tenant RAG Document Chatbot
 
 > **AI Engineering Portfolio Project** — Production-grade RAG with Grok (xAI), Qdrant Hybrid Search, LangGraph, CrossEncoder Reranking and multi-tenant isolation.
 
