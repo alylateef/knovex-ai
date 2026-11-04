@@ -547,15 +547,15 @@ export async function apiGetThreadMessages(id: string): Promise<{ messages: Mess
       const citations = assistant.citations ?? [];
       const chunks: Record<string, SourceChunk> = {};
       citations.forEach((c, idx) => {
-        const chunkId = `chk-${c.document_id}-${c.chunk_index}-${idx}`;
+        const chunkId = `chk-${c.document_id || 'doc'}-${c.chunk_index ?? idx}-${idx}`;
         chunks[chunkId] = {
           id: chunkId,
-          doc_id: c.document_id,
-          filename: c.filename,
+          doc_id: c.document_id || '',
+          filename: c.filename || 'Source Document',
           page: c.page_number || 1,
-          char_count: c.snippet.length,
-          text: c.snippet,
-          scores: { rerank: c.relevance_score },
+          char_count: (c.snippet || '').length,
+          text: c.snippet || '',
+          scores: { rerank: c.relevance_score ?? 1.0 },
         };
       });
 

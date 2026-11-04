@@ -487,15 +487,17 @@ async def chat_stream(
         final_answer = ""
         final_citations = []
         final_evidence = "sufficient"
+        all_metadata_citations = []
 
         for event in stream_rag_pipeline(question=question, tenant_id=tenant_id, rerank=rerank):
             if event["type"] == "metadata":
+                all_metadata_citations = event.get("citations", [])
                 yield f"data: {json.dumps(event)}\n\n"
             elif event["type"] == "delta":
                 yield f"data: {json.dumps(event)}\n\n"
             elif event["type"] == "done":
                 final_answer = event.get("answer", "")
-                final_citations = event.get("citations", [])
+                final_citations = event.get("citations", []) or all_metadata_citations
                 final_evidence = event.get("evidence_status", "sufficient")
                 yield f"data: {json.dumps(event)}\n\n"
 
@@ -506,7 +508,7 @@ async def chat_stream(
                     conversation_id=conv_id,
                     role="assistant",
                     content=final_answer,
-                    citations=final_citations,
+                    citations=final_citations or all_metadata_citations,
                     evidence_status=final_evidence,
                 )
                 sync_db.add(assistant_msg)

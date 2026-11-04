@@ -331,7 +331,7 @@ def generate_answer_node(state: RAGState) -> Dict[str, Any]:
         else:
             answer = "No LLM API key configured. Add GROQ_API_KEY in .env to enable live LLM generation."
 
-    citations = extract_citations(answer, metadata_by_index)
+    citations = list(metadata_by_index.values())
     return {"answer": answer, "citations": citations}
 
 
@@ -467,7 +467,7 @@ def stream_rag_pipeline(question: str, tenant_id: str, rerank: bool = True):
         yield {"type": "delta", "content": fallback}
 
     full_answer = "".join(full_answer_parts)
-    citations = extract_citations(full_answer, metadata_by_index)
+    citations = list(metadata_by_index.values())
 
     yield {
         "type": "done",
