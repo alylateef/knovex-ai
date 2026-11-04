@@ -16,8 +16,14 @@ const THEME_STORAGE_KEY = 'knovex_ui_theme';
 
 function getInitialTheme(): Theme {
   const saved = localStorage.getItem(THEME_STORAGE_KEY);
-  if (saved === 'dark' || saved === 'light') return saved;
-  return 'light';
+  const theme: Theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+  // Apply class immediately on load so CSS vars are correct from the start
+  if (theme === 'dark') {
+    document.documentElement.classList.add('dark');
+  } else {
+    document.documentElement.classList.remove('dark');
+  }
+  return theme;
 }
 
 export const useUIStore = create<UIState>((set, get) => ({
