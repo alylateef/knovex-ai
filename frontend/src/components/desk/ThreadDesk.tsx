@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { SlidersHorizontal, ArrowUp, Loader2 } from 'lucide-react';
+import { SlidersHorizontal, Loader2 } from 'lucide-react';
 import { useChatStore } from '../../stores/chatStore.ts';
 import { useThreadsStore } from '../../stores/threadsStore.ts';
 import { useUIStore } from '../../stores/uiStore.ts';
@@ -145,10 +145,10 @@ export const ThreadDesk: React.FC = () => {
       </div>
 
       {/* Pinned Input Bar at Bottom */}
-      <div className="p-3.5 md:px-6 md:pb-4 md:pt-3 border-t border-line bg-surface/90 backdrop-blur shrink-0 relative">
+      <div className="p-2.5 md:px-6 md:pb-3 md:pt-2 border-t border-line bg-surface/90 backdrop-blur shrink-0 relative">
         <form onSubmit={handleSubmit} className="max-w-prose mx-auto">
-          {/* Main unified floating input capsule */}
-          <div className="relative flex items-center bg-bg border border-line rounded-xl shadow-sm transition-all duration-150 focus-within:border-mark focus-within:ring-2 focus-within:ring-mark/10 hover:border-line">
+          {/* Main unified compact input bar */}
+          <div className="relative flex items-center bg-bg border border-line rounded-lg shadow-xs transition-all duration-150 focus-within:border-mark focus-within:ring-1 focus-within:ring-mark/20 hover:border-line">
             <input
               ref={inputRef}
               type="text"
@@ -160,11 +160,11 @@ export const ThreadDesk: React.FC = () => {
                   ? 'Searching documents & verifying claims…'
                   : 'Ask a question about your documents…'
               }
-              className="w-full pl-3.5 pr-2 py-2.5 bg-transparent text-ink text-sm font-sans placeholder:text-muted focus:outline-none disabled:opacity-50"
+              className="w-full pl-3 pr-2 py-2 bg-transparent text-ink text-xs font-sans placeholder:text-muted focus:outline-none disabled:opacity-50"
             />
 
             {/* Actions cluster inside input */}
-            <div className="flex items-center space-x-1 pr-2 shrink-0">
+            <div className="flex items-center space-x-1 pr-1.5 shrink-0">
               {/* Subtle RAG tuning button */}
               <div className="relative" ref={tuneRef}>
                 <button
@@ -172,19 +172,19 @@ export const ThreadDesk: React.FC = () => {
                   onClick={() => setIsTuneOpen(!isTuneOpen)}
                   title="RAG Engine Parameters"
                   aria-label="RAG Engine Parameters"
-                  className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                  className={`p-1 rounded-md transition-colors cursor-pointer ${
                     isTuneOpen
                       ? 'text-mark bg-mark-bg'
                       : 'text-secondary hover:text-ink hover:bg-elevated'
                   }`}
                 >
-                  <SlidersHorizontal size={14} strokeWidth={1.75} />
+                  <SlidersHorizontal size={13} strokeWidth={1.5} />
                 </button>
 
                 {/* Minimal Popover */}
                 {isTuneOpen && (
-                  <div className="absolute right-0 bottom-full mb-3 p-3.5 bg-surface border border-line rounded-lg shadow-lg z-30 w-72 space-y-3">
-                    <div className="flex items-center justify-between pb-1.5 border-b border-line">
+                  <div className="absolute right-0 bottom-full mb-2 p-3 bg-surface border border-line rounded-lg shadow-lg z-30 w-72 space-y-2.5">
+                    <div className="flex items-center justify-between pb-1 border-b border-line">
                       <span className="text-xs font-mono uppercase tracking-wider text-secondary font-medium">
                         Engine Parameters
                       </span>
@@ -222,29 +222,32 @@ export const ThreadDesk: React.FC = () => {
                 )}
               </div>
 
-              {/* Submit arrow button */}
+              {/* Compact professional Ask button */}
               <button
                 type="submit"
                 disabled={isSubmitting || !input.trim()}
-                title={isSubmitting ? 'Searching...' : 'Send question (Enter)'}
-                aria-label="Send question"
-                className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-150 shrink-0 ${
+                title="Send question (Enter)"
+                aria-label="Ask"
+                className={`h-6 px-2.5 flex items-center justify-center text-xs font-sans font-medium rounded-md transition-all duration-150 shrink-0 ${
                   input.trim() && !isSubmitting
-                    ? 'bg-mark text-white hover:bg-mark-hover shadow-sm cursor-pointer hover:scale-105 active:scale-95'
+                    ? 'bg-mark text-white hover:bg-mark-hover shadow-xs cursor-pointer'
                     : 'bg-elevated text-muted cursor-not-allowed opacity-50'
                 }`}
               >
                 {isSubmitting ? (
-                  <Loader2 size={13} className="animate-spin" strokeWidth={2.2} />
+                  <span className="flex items-center space-x-1">
+                    <Loader2 size={11} className="animate-spin" strokeWidth={2.2} />
+                    <span>Searching</span>
+                  </span>
                 ) : (
-                  <ArrowUp size={14} strokeWidth={2.4} />
+                  'Ask'
                 )}
               </button>
             </div>
           </div>
 
           {/* Clean minimal metadata hint */}
-          <div className="mt-1.5 px-1 flex items-center justify-between text-[11px] font-mono text-muted select-none">
+          <div className="mt-1 px-1 flex items-center justify-between text-[11px] font-mono text-muted select-none">
             <span className="truncate">
               Grounded retrieval · Source verified
             </span>
