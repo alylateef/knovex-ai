@@ -75,7 +75,7 @@ export const MemoAnswer: React.FC<MemoAnswerProps> = ({
             {answer.abstained ? (
               <AbstainedBlock reason={answer.reason} />
             ) : (
-              <div className="font-serif text-lg leading-relaxed text-ink">
+              <div className="font-sans text-base leading-relaxed text-ink">
                 {answer.sentences.map((sent, idx) => (
                   <ClaimSentenceView
                     key={idx}

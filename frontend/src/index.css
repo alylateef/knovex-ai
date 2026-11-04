@@ -10,14 +10,14 @@
    ========================================================= */
 
 :root {
-  --color-bg:          #F5F7FA;
-  --color-sidebar:     #EDF1F6;
+  --color-bg:          #F8FAFC;
+  --color-sidebar:     #F1F5F9;
   --color-surface:     #FFFFFF;
   --color-panel:       #FFFFFF;
   --color-elevated:    #E2E8F0;
-  --color-line:        #E0E6EE;
-  --color-ink:         #111827;
-  --color-secondary:   #64748B;
+  --color-line:        #E2E8F0;
+  --color-ink:         #0F172A;
+  --color-secondary:   #475569;
   --color-muted:       #94A3B8;
   --color-mark:        #2563EB;
   --color-mark-hover:  #1D4ED8;
@@ -26,18 +26,18 @@
 }
 
 .dark {
-  --color-bg:          #0B0F14;
-  --color-sidebar:     #0E131B;
-  --color-surface:     #111923;
-  --color-panel:       #111923;
-  --color-elevated:    #182331;
-  --color-line:        #263241;
-  --color-ink:         #F0F4F8;
-  --color-secondary:   #A3B1C2;
-  --color-muted:       #78889B;
-  --color-mark:        #62D6FF;
-  --color-mark-hover:  #8BE3FF;
-  --color-mark-bg:     #102B38;
+  --color-bg:          #090D12;
+  --color-sidebar:     #0F141C;
+  --color-surface:     #131B26;
+  --color-panel:       #131B26;
+  --color-elevated:    #1C2636;
+  --color-line:        #243044;
+  --color-ink:         #F8FAFC;
+  --color-secondary:   #94A3B8;
+  --color-muted:       #64748B;
+  --color-mark:        #38BDF8;
+  --color-mark-hover:  #7DD3FC;
+  --color-mark-bg:     #0C2B40;
   --color-danger:      #F87171;
 }
 

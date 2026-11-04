@@ -23,8 +23,6 @@ settings = get_settings()
 os.environ["HF_HOME"] = str(settings.HF_HOME)
 os.environ["SENTENCE_TRANSFORMERS_HOME"] = str(settings.HF_HOME)
 os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1"
-os.environ["HF_HUB_OFFLINE"] = "1"
-os.environ["TRANSFORMERS_OFFLINE"] = "1"
 if settings.HUGGINGFACE_API_KEY:
     os.environ["HF_TOKEN"] = settings.HUGGINGFACE_API_KEY
     os.environ["HUGGINGFACEHUB_API_TOKEN"] = settings.HUGGINGFACE_API_KEY
