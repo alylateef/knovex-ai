@@ -46,9 +46,15 @@ const config: Config = {
     },
     borderRadius: {
       none:   '0px',
-      input:  '2px',
+      sm:     '2px',
+      input:  '4px',
       chip:   '3px',
-      button: '4px',
+      button: '6px',
+      md:     '6px',
+      lg:     '8px',
+      xl:     '12px',
+      '2xl':  '16px',
+      full:   '9999px',
       panel:  '0px',
     },
     fontFamily: {

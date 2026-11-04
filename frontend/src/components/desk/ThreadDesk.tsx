@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { SlidersHorizontal } from 'lucide-react';
+import { SlidersHorizontal, ArrowUp, Loader2 } from 'lucide-react';
 import { useChatStore } from '../../stores/chatStore.ts';
 import { useThreadsStore } from '../../stores/threadsStore.ts';
 import { useUIStore } from '../../stores/uiStore.ts';
@@ -145,10 +145,10 @@ export const ThreadDesk: React.FC = () => {
       </div>
 
       {/* Pinned Input Bar at Bottom */}
-      <div className="p-4 border-t border-line bg-surface shrink-0 relative">
-        <form onSubmit={handleSubmit} className="max-w-prose mx-auto flex items-center space-x-2 relative">
-
-          <div className="relative flex-1 flex items-center">
+      <div className="p-3.5 md:px-6 md:pb-4 md:pt-3 border-t border-line bg-surface/90 backdrop-blur shrink-0 relative">
+        <form onSubmit={handleSubmit} className="max-w-prose mx-auto">
+          {/* Main unified floating input capsule */}
+          <div className="relative flex items-center bg-bg border border-line rounded-xl shadow-sm transition-all duration-150 focus-within:border-mark focus-within:ring-2 focus-within:ring-mark/10 hover:border-line">
             <input
               ref={inputRef}
               type="text"
@@ -157,77 +157,101 @@ export const ThreadDesk: React.FC = () => {
               disabled={isSubmitting}
               placeholder={
                 isSubmitting
-                  ? 'Searching your documents…'
+                  ? 'Searching documents & verifying claims…'
                   : 'Ask a question about your documents…'
               }
-              className="w-full pl-3 pr-8 py-2 bg-bg border border-line text-ink text-sm rounded-input focus:border-mark focus:outline-none placeholder:text-muted transition-colors"
+              className="w-full pl-3.5 pr-2 py-2.5 bg-transparent text-ink text-sm font-sans placeholder:text-muted focus:outline-none disabled:opacity-50"
             />
 
-            {/* Subtle RAG tuning button */}
-            <div className="absolute right-2" ref={tuneRef}>
+            {/* Actions cluster inside input */}
+            <div className="flex items-center space-x-1 pr-2 shrink-0">
+              {/* Subtle RAG tuning button */}
+              <div className="relative" ref={tuneRef}>
+                <button
+                  type="button"
+                  onClick={() => setIsTuneOpen(!isTuneOpen)}
+                  title="RAG Engine Parameters"
+                  aria-label="RAG Engine Parameters"
+                  className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                    isTuneOpen
+                      ? 'text-mark bg-mark-bg'
+                      : 'text-secondary hover:text-ink hover:bg-elevated'
+                  }`}
+                >
+                  <SlidersHorizontal size={14} strokeWidth={1.75} />
+                </button>
+
+                {/* Minimal Popover */}
+                {isTuneOpen && (
+                  <div className="absolute right-0 bottom-full mb-3 p-3.5 bg-surface border border-line rounded-lg shadow-lg z-30 w-72 space-y-3">
+                    <div className="flex items-center justify-between pb-1.5 border-b border-line">
+                      <span className="text-xs font-mono uppercase tracking-wider text-secondary font-medium">
+                        Engine Parameters
+                      </span>
+                      <span className="text-xs font-mono text-mark font-medium bg-mark-bg px-1.5 py-0.5 rounded">
+                        {mode}
+                      </span>
+                    </div>
+
+                    <div>
+                      <span className="block text-xs font-mono text-secondary mb-1">
+                        Context Passages
+                      </span>
+                      <SegmentedControl
+                        name="popover-passages"
+                        label="Passages count"
+                        value={topK}
+                        onChange={setTopK}
+                        options={passageOptions}
+                      />
+                    </div>
+
+                    <div>
+                      <span className="block text-xs font-mono text-secondary mb-1">
+                        Retrieval Strategy
+                      </span>
+                      <SegmentedControl
+                        name="popover-mode"
+                        label="Search Mode"
+                        value={mode}
+                        onChange={setMode}
+                        options={modeOptions}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Submit arrow button */}
               <button
-                type="button"
-                onClick={() => setIsTuneOpen(!isTuneOpen)}
-                title="RAG Engine Parameters"
-                aria-label="RAG Engine Parameters"
-                className={`p-1 rounded-chip transition-colors ${
-                  isTuneOpen
-                    ? 'text-mark bg-mark-bg'
-                    : 'text-secondary hover:text-ink hover:bg-elevated'
+                type="submit"
+                disabled={isSubmitting || !input.trim()}
+                title={isSubmitting ? 'Searching...' : 'Send question (Enter)'}
+                aria-label="Send question"
+                className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-150 shrink-0 ${
+                  input.trim() && !isSubmitting
+                    ? 'bg-mark text-white hover:bg-mark-hover shadow-sm cursor-pointer hover:scale-105 active:scale-95'
+                    : 'bg-elevated text-muted cursor-not-allowed opacity-50'
                 }`}
               >
-                <SlidersHorizontal size={14} strokeWidth={1.5} />
+                {isSubmitting ? (
+                  <Loader2 size={13} className="animate-spin" strokeWidth={2.2} />
+                ) : (
+                  <ArrowUp size={14} strokeWidth={2.4} />
+                )}
               </button>
-
-              {/* Minimal Popover */}
-              {isTuneOpen && (
-                <div className="absolute right-0 bottom-8 mb-2 p-3.5 bg-surface border border-line rounded-input shadow-lg z-20 w-72 space-y-3">
-                  <div className="flex items-center justify-between pb-1 border-b border-line">
-                    <span className="text-xs font-mono uppercase tracking-wider text-secondary">
-                      Engine Parameters
-                    </span>
-                    <span className="text-xs font-mono text-mark font-medium">
-                      {mode}
-                    </span>
-                  </div>
-
-                  <div>
-                    <span className="block text-xs font-mono text-secondary mb-1">
-                      Context Passages
-                    </span>
-                    <SegmentedControl
-                      name="popover-passages"
-                      label="Passages count"
-                      value={topK}
-                      onChange={setTopK}
-                      options={passageOptions}
-                    />
-                  </div>
-
-                  <div>
-                    <span className="block text-xs font-mono text-secondary mb-1">
-                      Retrieval Strategy
-                    </span>
-                    <SegmentedControl
-                      name="popover-mode"
-                      label="Search Mode"
-                      value={mode}
-                      onChange={setMode}
-                      options={modeOptions}
-                    />
-                  </div>
-                </div>
-              )}
             </div>
           </div>
 
-          <button
-            type="submit"
-            disabled={isSubmitting || !input.trim()}
-            className="px-4 py-2 bg-mark hover:bg-mark-hover text-bg font-sans font-medium text-sm rounded-button transition-colors disabled:opacity-40 shrink-0"
-          >
-            {isSubmitting ? 'Searching…' : 'Ask'}
-          </button>
+          {/* Clean minimal metadata hint */}
+          <div className="mt-1.5 px-1 flex items-center justify-between text-[11px] font-mono text-muted select-none">
+            <span className="truncate">
+              Grounded retrieval · Source verified
+            </span>
+            <span className="hidden sm:inline-block">
+              Press <kbd className="px-1 py-0.2 bg-elevated border border-line rounded text-[10px] text-secondary font-mono">↵</kbd>
+            </span>
+          </div>
         </form>
       </div>
     </main>
