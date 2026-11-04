@@ -1,0 +1,23 @@
+Knovex AI Enterprise Security Policy & Compliance Guidelines
+Document Classification: Internal Confidential
+Effective Date: 2026-10-16
+
+1. Authentication and Token Management
+- Token Standards: JSON Web Tokens (JWT) signed with HMAC-SHA256 (HS256) using a 256-bit cryptographic secret key.
+- Lifespan: Access tokens expire after 60 minutes. Refresh tokens expire after 7 days.
+- Revocation: Logout events write the token identifier (jti) to a Redis blocklist with an automatic Time-To-Live (TTL) matching the token expiration window.
+- Rate Limiting: API requests are constrained using a Redis sliding-window algorithm enforcing a maximum rate of 60 requests per minute per authenticated user identifier.
+
+2. Document Ingestion Security
+- Allowed File Types: Ingestion is strictly limited to Portable Document Format (.pdf) and plain text (.txt, .md).
+- File Size Constraints: The maximum permissible upload size is 15 Megabytes (15,728,640 bytes).
+- Directory Traversal Mitigation: File paths are sanitized against directory traversal attacks (e.g., ../ patterns). All uploads are written to designated tenant-specific isolated directories.
+- Untrusted Content Rule: All uploaded document content is treated strictly as untrusted external data and never directly executed or evaluated as system instructions.
+
+3. Role-Based Access Control (RBAC)
+- Admin: Full tenant privileges including document upload, document deletion, user invitation, and system configuration.
+- User: Read and conversational query privileges across all tenant documents; ability to upload and delete personal documents.
+- Viewer: Read-only access to existing conversations and search capabilities; cannot upload or modify documents.
+
+4. Data Retention and Deletion
+- Right to Erasure: Upon user request or document deletion, records are purged from the PostgreSQL document_chunks table and corresponding vector points are permanently removed from the Qdrant vector database via filter selector.

@@ -1,0 +1,35 @@
+Knovex AI System Architecture Specification
+Version: 1.0 (Enterprise Edition)
+
+1. Executive Overview
+Knovex AI is an industry-grade, multi-tenant Retrieval-Augmented Generation (RAG) platform. It provides tenant-isolated document ingestion, hybrid vector search, CrossEncoder reranking, and grounded conversational responses powered by Grok (xAI) via LangGraph orchestration.
+
+2. Multi-Tenant Isolation
+Tenant isolation is strictly enforced across all persistence and search tiers:
+- Application Data: Every table in PostgreSQL (users, documents, document_chunks, ingestion_jobs, conversations, messages) maintains a mandatory tenant_id foreign key indexed for low-latency scoping.
+- Vector Isolation: In Qdrant, points are stored with a tenant_id keyword payload. Every query applies a strict filter { key: "metadata.tenant_id", match: { value: tenant_id } }. Cross-tenant leakage is prevented at the database and search index levels.
+
+3. Hybrid Retrieval and Fusion
+Knovex AI utilizes a dual-path hybrid retrieval mechanism:
+- Dense Vector Path: Uses sentence-transformers/all-MiniLM-L6-v2 yielding 384-dimensional dense vectors with cosine similarity distance. Runs locally on CPU.
+- Sparse Vector Path: Employs Qdrant/bm25 sparse representations computed through FastEmbed.
+- Fusion: Combines dense and sparse candidates using Qdrant native Reciprocal Rank Fusion (RRF), ensuring balanced retrieval across semantic similarity and exact term matching.
+
+4. CrossEncoder Reranking
+Top candidates (default: 15) returned by hybrid retrieval are passed to a secondary reranking stage:
+- Model: cross-encoder/ms-marco-MiniLM-L-6-v2 running locally.
+- Scoring: Computes cross-attention between the exact user query and retrieved passage text.
+- Top-K Selection: Filters the top 5 highest-confidence passages for prompt synthesis, discarding low-relevance candidates.
+
+5. LangGraph Workflow Orchestration
+The query lifecycle is modeled as a compiled LangGraph StateGraph with explicit state nodes:
+- retrieve: Executes tenant-isolated hybrid query against Qdrant.
+- rerank: Applies CrossEncoder scoring to candidate passages.
+- assess_evidence: Evaluates if retrieved context meets minimum length and semantic threshold.
+- generate_answer: Prompts Grok (ChatXAI) with strict instructions to answer strictly from retrieved context and format source citations.
+- decline_to_answer: Politely refuses to generate an answer if evidence is insufficient, preventing hallucinations.
+
+6. Background Ingestion Worker
+Document processing runs asynchronously via Celery backed by Redis:
+- Steps: Document parsing via PyPDF, text chunking with RecursiveCharacterTextSplitter (chunk size: 800, overlap: 150), vector upsert to Qdrant, and PostgreSQL tracking.
+- Idempotency & Retries: Tasks use unique document identifiers and exponential backoff to handle transient worker disconnects.

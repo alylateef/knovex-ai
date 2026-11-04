@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Knovex AI — Enterprise Multi-Tenant RAG</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Header / Navigation Bar -->
+  <header class="navbar">
+    <div class="nav-brand">
+      <div class="logo-icon">K</div>
+      <div class="brand-text">
+        <span class="brand-title">Knovex AI</span>
+        <span class="brand-subtitle">Multi-Tenant Document RAG</span>
+      </div>
+    </div>
+    <div class="nav-user" id="navUserSection" style="display: none;">
+      <span class="badge tenant-badge" id="tenantBadge">Organization</span>
+      <span class="badge user-badge" id="userBadge">user@knovex.ai</span>
+      <button class="btn btn-secondary btn-sm" id="logoutBtn">Logout</button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="main-container">
+    <!-- Auth Section (Shown when logged out) -->
+    <section class="auth-section" id="authSection">
+      <div class="auth-card">
+        <div class="auth-tabs">
+          <button class="tab-btn active" id="loginTabBtn">Sign In</button>
+          <button class="tab-btn" id="registerTabBtn">Create Organization</button>
+        </div>
+
+        <!-- Login Form -->
+        <form id="loginForm" class="auth-form">
+          <div class="form-group">
+            <label for="loginEmail">Email Address</label>
+            <input type="email" id="loginEmail" required placeholder="admin@enterprise.com">
+          </div>
+          <div class="form-group">
+            <label for="loginPassword">Password</label>
+            <input type="password" id="loginPassword" required placeholder="••••••••">
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">Sign In</button>
+        </form>
+
+        <!-- Register Form -->
+        <form id="registerForm" class="auth-form" style="display: none;">
+          <div class="form-group">
+            <label for="regOrg">Organization Name</label>
+            <input type="text" id="regOrg" required placeholder="Acme Corporation">
+          </div>
+          <div class="form-group">
+            <label for="regFullName">Full Name</label>
+            <input type="text" id="regFullName" placeholder="Jane Doe">
+          </div>
+          <div class="form-group">
+            <label for="regEmail">Email Address</label>
+            <input type="email" id="regEmail" required placeholder="admin@acme.com">
+          </div>
+          <div class="form-group">
+            <label for="regPassword">Password (min 8 chars)</label>
+            <input type="password" id="regPassword" required minlength="8" placeholder="••••••••">
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">Create Tenant & Account</button>
+        </form>
+        <div id="authAlert" class="alert" style="display: none;"></div>
+      </div>
+    </section>
+
+    <!-- App Dashboard Section (Shown when logged in) -->
+    <section class="dashboard-section" id="dashboardSection" style="display: none;">
+      <!-- Left Panel: Documents & Ingestion -->
+      <aside class="sidebar-panel">
+        <div class="panel-header">
+          <h3>Documents</h3>
+          <span class="subtext">PDF &amp; TXT Multi-tenant store</span>
+        </div>
+
+        <!-- Upload Box -->
+        <div class="upload-box" id="dropZone">
+          <div class="upload-icon">📄</div>
+          <p>Drag &amp; drop files here, or <label for="fileInput" class="upload-link">browse</label></p>
+          <input type="file" id="fileInput" accept=".pdf,.txt" style="display: none;">
+          <div class="upload-info">Max 15MB per file (PDF / TXT)</div>
+        </div>
+        <div id="uploadProgress" class="upload-progress" style="display: none;">
+          <div class="spinner"></div>
+          <span id="uploadStatusText">Uploading &amp; indexing document...</span>
+        </div>
+
+        <!-- Document List -->
+        <div class="doc-list-container">
+          <h4>Indexed Documents (<span id="docCount">0</span>)</h4>
+          <div id="docList" class="doc-list">
+            <div class="empty-state">No documents uploaded yet.</div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Right Panel: Chat & Citations -->
+      <section class="chat-panel">
+        <div class="chat-header">
+          <div class="chat-title-info">
+            <h3 id="chatTitle">Tenant RAG Assistant</h3>
+            <span class="subtext">Grok LLM with Hybrid Retrieval &amp; CrossEncoder Reranking</span>
+          </div>
+          <div class="chat-controls">
+            <label class="toggle-switch">
+              <input type="checkbox" id="rerankToggle" checked>
+              <span class="slider"></span>
+              <span class="toggle-label">CrossEncoder Rerank</span>
+            </label>
+            <button class="btn btn-secondary btn-sm" id="newChatBtn">+ New Chat</button>
+          </div>
+        </div>
+
+        <!-- Message History -->
+        <div class="chat-messages" id="chatMessages">
+          <div class="chat-welcome">
+            <div class="welcome-icon">⚡</div>
+            <h4>Welcome to Knovex AI</h4>
+            <p>Upload your organization's documents on the left, then ask questions here. Every response is strictly grounded in your tenant's data with verifiable citations.</p>
+          </div>
+        </div>
+
+        <!-- Chat Input Bar -->
+        <form id="chatForm" class="chat-input-bar">
+          <input type="text" id="chatInput" placeholder="Ask a question about your documents..." autocomplete="off" required>
+          <button type="submit" class="btn btn-primary" id="sendBtn">Ask</button>
+        </form>
+      </section>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

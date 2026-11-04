@@ -1,0 +1,52 @@
+{
+  "metadata": {
+    "corpus": "Knovex AI Starter Corpus",
+    "dataset_type": "synthetic_benchmark",
+    "verification_status": "unverified_synthetic_benchmark_not_human_verified",
+    "description": "Benchmark evaluation questions for testing hybrid retrieval, RRF, CrossEncoder reranking, and citation accuracy."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "question": "What dense embedding model and vector dimension does Knovex AI use for hybrid retrieval?",
+      "expected_doc_name": "knovex_architecture_spec.txt",
+      "expected_keywords": ["sentence-transformers/all-MiniLM-L6-v2", "384-dimensional", "dense", "cosine"],
+      "ground_truth_context": "Uses sentence-transformers/all-MiniLM-L6-v2 yielding 384-dimensional dense vectors with cosine similarity distance."
+    },
+    {
+      "id": "q2",
+      "question": "How is tenant isolation enforced within the Qdrant vector database?",
+      "expected_doc_name": "knovex_architecture_spec.txt",
+      "expected_keywords": ["metadata.tenant_id", "filter", "Qdrant", "payload"],
+      "ground_truth_context": "In Qdrant, points are stored with a tenant_id keyword payload. Every query applies a strict filter { key: 'metadata.tenant_id', match: { value: tenant_id } }."
+    },
+    {
+      "id": "q3",
+      "question": "Which CrossEncoder model is used for reranking and how many top candidates are selected?",
+      "expected_doc_name": "knovex_architecture_spec.txt",
+      "expected_keywords": ["cross-encoder/ms-marco-MiniLM-L-6-v2", "top 5"],
+      "ground_truth_context": "Model: cross-encoder/ms-marco-MiniLM-L-6-v2 running locally. Top-K Selection: Filters the top 5 highest-confidence passages for prompt synthesis."
+    },
+    {
+      "id": "q4",
+      "question": "What is the token expiration lifespan and rate limit defined in the security policy?",
+      "expected_doc_name": "enterprise_security_policy.txt",
+      "expected_keywords": ["60 minutes", "7 days", "60 requests per minute", "Redis"],
+      "ground_truth_context": "Access tokens expire after 60 minutes. Refresh tokens expire after 7 days. Rate Limiting: maximum rate of 60 requests per minute per authenticated user identifier."
+    },
+    {
+      "id": "q5",
+      "question": "What are the allowed file types and maximum upload file size?",
+      "expected_doc_name": "enterprise_security_policy.txt",
+      "expected_keywords": [".pdf", ".txt", "15 Megabytes", "15,728,640 bytes"],
+      "ground_truth_context": "Allowed File Types: Ingestion is strictly limited to Portable Document Format (.pdf) and plain text (.txt, .md). The maximum permissible upload size is 15 Megabytes."
+    },
+    {
+      "id": "q6",
+      "question": "What happens when a document is deleted under the data retention policy?",
+      "expected_doc_name": "enterprise_security_policy.txt",
+      "expected_keywords": ["purged", "document_chunks", "Qdrant", "permanently removed"],
+      "ground_truth_context": "Upon user request or document deletion, records are purged from the PostgreSQL document_chunks table and corresponding vector points are permanently removed from the Qdrant vector database via filter selector."
+    }
+  ]
+}

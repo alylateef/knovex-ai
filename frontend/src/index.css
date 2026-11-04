@@ -1,0 +1,177 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* =========================================================
+   KNOVEX AI — Design Token Layer
+   Option 2: Deep Space Titanium & Cobalt Ice
+   Light mode: Warm alabaster + cobalt
+   Dark mode:  Deep space + cobalt ice
+   ========================================================= */
+
+:root {
+  --color-bg:          #F5F7FA;
+  --color-sidebar:     #EDF1F6;
+  --color-surface:     #FFFFFF;
+  --color-panel:       #FFFFFF;
+  --color-elevated:    #E2E8F0;
+  --color-line:        #E0E6EE;
+  --color-ink:         #111827;
+  --color-secondary:   #64748B;
+  --color-muted:       #94A3B8;
+  --color-mark:        #2563EB;
+  --color-mark-hover:  #1D4ED8;
+  --color-mark-bg:     #EFF6FF;
+  --color-danger:      #EF4444;
+}
+
+.dark {
+  --color-bg:          #0B0F14;
+  --color-sidebar:     #0E131B;
+  --color-surface:     #111923;
+  --color-panel:       #111923;
+  --color-elevated:    #182331;
+  --color-line:        #263241;
+  --color-ink:         #F0F4F8;
+  --color-secondary:   #A3B1C2;
+  --color-muted:       #78889B;
+  --color-mark:        #62D6FF;
+  --color-mark-hover:  #8BE3FF;
+  --color-mark-bg:     #102B38;
+  --color-danger:      #F87171;
+}
+
+/* =========================================================
+   BASE RESET
+   ========================================================= */
+
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  height: 100dvh;
+  margin: 0;
+  padding: 0;
+  background-color: var(--color-bg);
+  color: var(--color-ink);
+  font-family: "Schibsted Grotesk", sans-serif;
+  overflow: hidden;
+}
+
+/* =========================================================
+   SCROLLBARS — completely invisible
+   ========================================================= */
+
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+*::-webkit-scrollbar {
+  display: none;
+  width: 0px;
+  height: 0px;
+}
+
+/* =========================================================
+   PATTERNS
+   ========================================================= */
+
+/* Hatched pattern for "nothing on file" block */
+.bg-hatched {
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 6px,
+    var(--color-line) 6px,
+    var(--color-line) 7px
+  );
+}
+
+/* =========================================================
+   ANIMATIONS
+   ========================================================= */
+
+/* Smooth fade-in for new messages */
+@keyframes kx-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.kx-fade-in {
+  animation: kx-fade-in 280ms ease-out both;
+}
+
+/* Three-dot thinking indicator */
+@keyframes kx-dot-pulse {
+  0%, 60%, 100% { opacity: 0.15; transform: scale(0.85); }
+  30%           { opacity: 1;    transform: scale(1);    }
+}
+
+.kx-dot {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--color-mark);
+  animation: kx-dot-pulse 1.4s ease-in-out infinite;
+}
+.kx-dot:nth-child(2) { animation-delay: 0.18s; }
+.kx-dot:nth-child(3) { animation-delay: 0.36s; }
+
+/* Segment bar shimmer — for loading skeletons */
+@keyframes kx-shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position:  400px 0; }
+}
+
+.kx-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-line) 25%,
+    var(--color-panel) 50%,
+    var(--color-line) 75%
+  );
+  background-size: 400px 100%;
+  animation: kx-shimmer 1.5s ease-in-out infinite;
+}
+
+/* Restrained status pulse — subtle opacity variation */
+@keyframes kx-glow {
+  0%, 100% { opacity: 0.65; }
+  50%       { opacity: 1;    }
+}
+
+.kx-glow {
+  animation: kx-glow 3s ease-in-out infinite;
+}
+
+/* Accordion-like height collapse (for popover / inspector entrance) */
+@keyframes kx-slide-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.kx-slide-up {
+  animation: kx-slide-up 160ms ease-out both;
+}
+
+/* =========================================================
+   REDUCED MOTION OVERRIDE
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

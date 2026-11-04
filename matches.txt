@@ -1,0 +1,55 @@
+﻿D:\knovex-ai\evaluation\run_evaluation.py:14: from qdrant_client import QdrantClient
+D:\knovex-ai\evaluation\run_evaluation.py:27: get_dense_embeddings,
+D:\knovex-ai\knovex\api.py:136: @router.post("/auth/register", response_model=TokenResponse)
+D:\knovex-ai\knovex\api.py:187: @router.post("/auth/login", response_model=TokenResponse)
+D:\knovex-ai\knovex\api.py:221: @router.get("/auth/me", response_model=UserOut)
+D:\knovex-ai\knovex\api.py:230: @router.post("/documents/upload", response_model=DocumentUploadResponse)
+D:\knovex-ai\knovex\api.py:293: @router.get("/documents", response_model=List[DocumentOut])
+D:\knovex-ai\knovex\api.py:307: @router.get("/documents/{document_id}/status", response_model=IngestionStatusOut)
+D:\knovex-ai\knovex\api.py:371: @router.post("/chat/query", response_model=ChatMessageResponse)
+D:\knovex-ai\knovex\api.py:528: @router.get("/chat/conversations", response_model=List[ConversationOut])
+D:\knovex-ai\knovex\api.py:545: @router.get("/chat/conversations/{conversation_id}", response_model=ConversationDetailOut)
+D:\knovex-ai\knovex\api.py:581: @router.patch("/chat/conversations/{conversation_id}", response_model=ConversationOut)
+D:\knovex-ai\knovex\config.py:45: # Dense Embeddings (HuggingFace Cloud or local CPU fallback)
+D:\knovex-ai\knovex\config.py:48: # Sparse Embeddings (BM25 via FastEmbed)
+D:\knovex-ai\knovex\main.py:16: from knovex.rag import get_dense_embeddings, get_sparse_embeddings, get_cross_encoder
+D:\knovex-ai\knovex\main.py:36: await asyncio.to_thread(get_dense_embeddings)
+D:\knovex-ai\knovex\main.py:37: await asyncio.to_thread(get_sparse_embeddings)
+D:\knovex-ai\knovex\rag.py:14: from qdrant_client import QdrantClient
+D:\knovex-ai\knovex\rag.py:34: def get_dense_embeddings():
+D:\knovex-ai\knovex\rag.py:35: """Lazily load HuggingFaceEmbeddings once and cache in memory."""
+D:\knovex-ai\knovex\rag.py:36: from langchain_huggingface import HuggingFaceEmbeddings
+D:\knovex-ai\knovex\rag.py:37: logger.info(f"Loading dense embedding: {settings.DENSE_MODEL_NAME}")
+D:\knovex-ai\knovex\rag.py:41: return HuggingFaceEmbeddings(
+D:\knovex-ai\knovex\rag.py:45: encode_kwargs={"normalize_embeddings": True, "batch_size": 64},
+D:\knovex-ai\knovex\rag.py:50: def get_sparse_embeddings():
+D:\knovex-ai\knovex\rag.py:73: def get_qdrant_client() -> QdrantClient:
+D:\knovex-ai\knovex\rag.py:77: return QdrantClient(
+D:\knovex-ai\knovex\rag.py:82: return QdrantClient(path=settings.QDRANT_URL)
+D:\knovex-ai\knovex\rag.py:87: """Returns a cached QdrantVectorStore with native hybrid (Dense + BM25) search."""
+D:\knovex-ai\knovex\rag.py:88: from langchain_qdrant import QdrantVectorStore, RetrievalMode
+D:\knovex-ai\knovex\rag.py:109: return QdrantVectorStore(
+D:\knovex-ai\knovex\rag.py:112: embedding=get_dense_embeddings(),
+D:\knovex-ai\knovex\rag.py:113: sparse_embedding=get_sparse_embeddings(),
+D:\knovex-ai\knovex\rag.py:157: docs = retriever.invoke(query)
+D:\knovex-ai\knovex\rag.py:263: from langchain_groq import ChatGroq
+D:\knovex-ai\knovex\rag.py:264: return ChatGroq(
+D:\knovex-ai\knovex\rag.py:270: logger.error(f"Failed to initialize ChatGroq: {e}")
+D:\knovex-ai\knovex\rag.py:277: model=settings.GROK_MODEL,
+D:\knovex-ai\knovex\rag.py:316: response = llm.invoke([
+D:\knovex-ai\knovex\rag.py:352: workflow.add_node("retrieve", retrieve_node)
+D:\knovex-ai\knovex\rag.py:353: workflow.add_node("rerank", rerank_node)
+D:\knovex-ai\knovex\rag.py:354: workflow.add_node("assess_evidence", assess_evidence_node)
+D:\knovex-ai\knovex\rag.py:355: workflow.add_node("generate_answer", generate_answer_node)
+D:\knovex-ai\knovex\rag.py:356: workflow.add_node("decline_to_answer", decline_to_answer_node)
+D:\knovex-ai\knovex\rag.py:394: result = graph.invoke(initial_state)
+D:\knovex-ai\knovex\rag.py:432: for chunk in llm.stream([
+D:\knovex-ai\knovex\tasks.py:3: Handles asynchronous document chunking, embedding, Qdrant upsert, and DB status tracking
+D:\knovex-ai\knovex\tasks.py:85: # Scale progress from 50% to 90% across embedding batches
+D:\knovex-ai\tests\test_vector_store.py:8: from langchain_qdrant import QdrantVectorStore, RetrievalMode
+D:\knovex-ai\tests\test_vector_store.py:9: from qdrant_client import QdrantClient
+D:\knovex-ai\tests\test_vector_store.py:12: from knovex.rag import get_cross_encoder, get_dense_embeddings, get_sparse_embeddings
+D:\knovex-ai\tests\test_vector_store.py:16: client = QdrantClient(":memory:")
+D:\knovex-ai\tests\test_vector_store.py:25: store = QdrantVectorStore(
+D:\knovex-ai\tests\test_vector_store.py:28: embedding=get_dense_embeddings(),
+D:\knovex-ai\tests\test_vector_store.py:29: sparse_embedding=get_sparse_embeddings(),

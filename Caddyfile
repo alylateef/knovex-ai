@@ -1,0 +1,17 @@
+# ==============================================================================
+# Knovex AI — Production Caddy Reverse Proxy
+# ==============================================================================
+# On AWS with a custom domain, replace ":80" with your domain (e.g. "ai.yourdomain.com")
+# to enable automatic free HTTPS via Let's Encrypt.
+# ==============================================================================
+
+:80 {
+    # High-performance response compression
+    encode gzip zstd
+
+    # Reverse proxy all web & API traffic to FastAPI backend
+    reverse_proxy backend:8000 {
+        # Immediate unbuffered flush for SSE token streaming
+        flush_interval -1
+    }
+}

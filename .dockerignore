@@ -1,0 +1,17 @@
+.venv
+venv
+ENV
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache
+.coverage
+htmlcov
+.git
+.gitignore
+.env.local
+frontend/node_modules
+data/uploads/*
+!data/uploads/.gitkeep
+data/qdrant_local/*
