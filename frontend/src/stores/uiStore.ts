@@ -6,10 +6,13 @@ interface UIState {
   topK: TopK;
   mode: RAGMode;
   inspectorOpen: boolean;
+  sidebarOpen: boolean;
   toggleTheme: () => void;
   setTopK: (k: TopK) => void;
   setMode: (m: RAGMode) => void;
   setInspectorOpen: (open: boolean) => void;
+  setSidebarOpen: (open: boolean) => void;
+  toggleSidebar: () => void;
 }
 
 const THEME_STORAGE_KEY = 'knovex_ui_theme';
@@ -31,6 +34,7 @@ export const useUIStore = create<UIState>((set, get) => ({
   topK: 5,
   mode: 'rerank',
   inspectorOpen: false,
+  sidebarOpen: false,
 
   toggleTheme: () => {
     const next = get().theme === 'dark' ? 'light' : 'dark';
@@ -46,4 +50,6 @@ export const useUIStore = create<UIState>((set, get) => ({
   setTopK: (topK) => set({ topK }),
   setMode: (mode) => set({ mode }),
   setInspectorOpen: (inspectorOpen) => set({ inspectorOpen }),
+  setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
+  toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
 }));

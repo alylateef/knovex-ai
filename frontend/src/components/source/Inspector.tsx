@@ -39,13 +39,24 @@ export const Inspector: React.FC = () => {
   };
 
   return (
-    <aside
-      ref={inspectorRef}
-      role="dialog"
-      aria-modal="true"
-      aria-label="Citation Inspector"
-      className="kx-slide-up fixed inset-x-0 bottom-0 max-h-full md:static md:w-source md:max-h-full shrink-0 border-t md:border-t-0 md:border-l border-line bg-surface flex flex-col overflow-y-auto z-30"
-    >
+    <>
+      {/* Mobile backdrop */}
+      <div
+        role="button"
+        tabIndex={0}
+        aria-label="Close Inspector"
+        onClick={close}
+        onKeyDown={(e) => { if (e.key === 'Escape') close(); }}
+        className="fixed inset-0 bg-black/40 backdrop-blur-xs z-30 md:hidden transition-opacity cursor-pointer"
+      />
+
+      <aside
+        ref={inspectorRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Citation Inspector"
+        className="kx-slide-up fixed inset-x-0 bottom-0 max-h-[85vh] md:static md:w-source md:max-h-full shrink-0 border-t md:border-t-0 md:border-l border-line bg-surface flex flex-col overflow-y-auto z-40 shadow-2xl md:shadow-none rounded-t-2xl md:rounded-none"
+      >
       {/* ── Header ── */}
       <div className="px-5 pt-5 pb-3 border-b border-line shrink-0">
         <div className="flex items-center justify-between">
@@ -152,5 +163,6 @@ export const Inspector: React.FC = () => {
         </button>
       </div>
     </aside>
+  </>
   );
 };

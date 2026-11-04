@@ -40,10 +40,10 @@ export const AuthScreen: React.FC = () => {
   const labelCls = 'block text-xs font-mono text-secondary mb-1 uppercase tracking-wider font-medium';
 
   return (
-    <div className="w-full h-full flex flex-col md:flex-row bg-bg text-ink overflow-hidden">
+    <div className="w-full h-full min-h-screen md:min-h-0 flex flex-col md:flex-row bg-bg text-ink overflow-y-auto md:overflow-hidden">
 
-      {/* ── Left: Brand manifesto ── */}
-      <div className="w-full md:w-1/2 p-7 md:p-8 flex flex-col justify-between border-b md:border-b-0 md:border-r border-line bg-sidebar">
+      {/* ── Left: Brand manifesto (Desktop only) ── */}
+      <div className="hidden md:flex md:w-1/2 p-7 md:p-8 flex-col justify-between border-r border-line bg-sidebar shrink-0">
         <div>
           {/* Wordmark */}
           <div className="flex items-center space-x-2.5 mb-7">
@@ -85,9 +85,21 @@ export const AuthScreen: React.FC = () => {
         </div>
       </div>
 
-      {/* ── Right: Auth form ── */}
-      <div className="w-full md:w-1/2 p-7 md:p-8 flex items-center justify-center bg-bg">
+      {/* ── Right: Auth form (Mobile + Desktop) ── */}
+      <div className="w-full md:w-1/2 p-6 md:p-8 flex flex-col items-center justify-center bg-bg my-auto">
         <div className="w-full max-w-sm">
+
+          {/* Mobile-only brand header */}
+          <div className="md:hidden flex items-center space-x-2.5 mb-6 select-none">
+            <img
+              src="/logo.png"
+              alt="Knovex AI Logo"
+              style={{ width: '28px', height: '28px' }}
+              className="rounded-chip object-cover shrink-0"
+            />
+            <span className="font-sans font-bold text-lg text-ink tracking-tight">Knovex</span>
+            <span className="font-mono text-xs text-muted border border-line px-1 rounded-chip">AI</span>
+          </div>
 
           {/* Tab switcher */}
           <div className="flex border-b border-line mb-6">

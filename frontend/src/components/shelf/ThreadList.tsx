@@ -1,6 +1,7 @@
 import React, { useRef, useState, useCallback } from 'react';
 import { MessageSquare, Trash2 } from 'lucide-react';
 import { useThreadsStore } from '../../stores/threadsStore.ts';
+import { useUIStore } from '../../stores/uiStore.ts';
 import { groupThreadsByDate } from '../../lib/groupThreadsByDate.ts';
 import { Thread } from '../../types.ts';
 
@@ -152,16 +153,18 @@ const ThreadRow: React.FC<ThreadRowProps> = ({ thread, isActive, onSelect, onDel
 export const ThreadList: React.FC = () => {
   const { threads, activeThreadId, fetchingList, setActiveThread, deleteThread, renameThread } =
     useThreadsStore();
+  const { setSidebarOpen } = useUIStore();
 
   const groups = groupThreadsByDate(threads);
 
   const handleSelect = useCallback(
     (id: string) => {
+      setSidebarOpen(false);
       if (id !== activeThreadId) {
         void setActiveThread(id);
       }
     },
-    [activeThreadId, setActiveThread]
+    [activeThreadId, setActiveThread, setSidebarOpen]
   );
 
   const handleDelete = useCallback(

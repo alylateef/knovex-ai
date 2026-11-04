@@ -1,8 +1,9 @@
 import React, { useEffect } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore.ts';
 import { useDocsStore } from '../../stores/docsStore.ts';
 import { useThreadsStore } from '../../stores/threadsStore.ts';
+import { useUIStore } from '../../stores/uiStore.ts';
 import { UploadDropzone } from './UploadDropzone.tsx';
 import { DocumentsList } from './DocumentsList.tsx';
 import { ThreadList } from './ThreadList.tsx';
@@ -31,6 +32,7 @@ export const Shelf: React.FC = () => {
   const { user, logout } = useAuthStore();
   const { fetchDocs } = useDocsStore();
   const { fetchThreads, setActiveThread } = useThreadsStore();
+  const { sidebarOpen, setSidebarOpen } = useUIStore();
 
   useEffect(() => {
     fetchDocs();
@@ -39,23 +41,55 @@ export const Shelf: React.FC = () => {
 
   const handleNewThread = () => {
     void setActiveThread(null);
+    setSidebarOpen(false);
   };
 
   return (
-    <aside className="w-full md:w-shelf shrink-0 border-b md:border-b-0 md:border-r border-line bg-sidebar flex flex-col h-auto md:h-full overflow-hidden">
+    <>
+      {/* Mobile Backdrop */}
+      {sidebarOpen && (
+        <div
+          role="button"
+          tabIndex={0}
+          aria-label="Close sidebar"
+          onClick={() => setSidebarOpen(false)}
+          onKeyDown={(e) => { if (e.key === 'Escape') setSidebarOpen(false); }}
+          className="fixed inset-0 bg-black/40 backdrop-blur-xs z-40 md:hidden transition-opacity cursor-pointer"
+        />
+      )}
 
-      {/* ── Brand header ── */}
-      <div className="px-4 pt-4 pb-3 border-b border-line shrink-0">
-        <KnovexWordmark />
-        <div className="mt-2 flex items-center space-x-2">
-          <div className="w-1.5 h-1.5 rounded-chip bg-mark" />
-          <span className="text-xs font-mono text-secondary truncate" title={user?.email}>
-            {user?.email.split('@')[1] || 'workspace'}
-          </span>
-          <span className="text-xs font-mono text-muted">·</span>
-          <span className="text-xs font-mono text-secondary capitalize">{user?.role || 'user'}</span>
+      <aside
+        className={`
+          fixed md:static inset-y-0 left-0 z-50
+          w-72 md:w-shelf shrink-0
+          border-r border-line bg-sidebar flex flex-col h-full overflow-hidden
+          transition-transform duration-200 ease-in-out
+          ${sidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full md:translate-x-0'}
+        `}
+      >
+
+        {/* ── Brand header ── */}
+        <div className="px-4 pt-4 pb-3 border-b border-line shrink-0">
+          <div className="flex items-center justify-between">
+            <KnovexWordmark />
+            <button
+              type="button"
+              onClick={() => setSidebarOpen(false)}
+              aria-label="Close sidebar"
+              className="md:hidden p-1 text-secondary hover:text-ink rounded-lg transition-colors cursor-pointer"
+            >
+              <X size={16} strokeWidth={1.75} />
+            </button>
+          </div>
+          <div className="mt-2 flex items-center space-x-2">
+            <div className="w-1.5 h-1.5 rounded-chip bg-mark" />
+            <span className="text-xs font-mono text-secondary truncate" title={user?.email}>
+              {user?.email.split('@')[1] || 'workspace'}
+            </span>
+            <span className="text-xs font-mono text-muted">·</span>
+            <span className="text-xs font-mono text-secondary capitalize">{user?.role || 'user'}</span>
+          </div>
         </div>
-      </div>
 
       {/* ── Scrollable middle ── */}
       <div className="flex-1 overflow-y-auto">
@@ -130,5 +164,6 @@ export const Shelf: React.FC = () => {
         </button>
       </div>
     </aside>
+  </>
   );
 };

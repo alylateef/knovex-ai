@@ -1,10 +1,10 @@
 import React from 'react';
-import { Sun, Moon } from 'lucide-react';
+import { Sun, Moon, Menu } from 'lucide-react';
 import { useUIStore } from '../../stores/uiStore.ts';
 import { useThreadsStore } from '../../stores/threadsStore.ts';
 
 export const TopBar: React.FC = () => {
-  const { theme, toggleTheme } = useUIStore();
+  const { theme, toggleTheme, toggleSidebar } = useUIStore();
   const { threads, activeThreadId } = useThreadsStore();
 
   const activeThread = activeThreadId
@@ -12,14 +12,23 @@ export const TopBar: React.FC = () => {
     : null;
 
   return (
-    <header className="h-12 border-b border-line bg-surface px-4 flex items-center justify-between shrink-0">
+    <header className="h-12 border-b border-line bg-surface px-3 md:px-4 flex items-center justify-between shrink-0">
 
-      {/* Left — active thread title or system status */}
-      <div className="flex items-center space-x-3 min-w-0">
+      {/* Left — mobile menu button + active thread title or system status */}
+      <div className="flex items-center space-x-2 md:space-x-3 min-w-0">
+        <button
+          type="button"
+          onClick={toggleSidebar}
+          aria-label="Open navigation menu"
+          className="md:hidden p-1.5 -ml-1 text-secondary hover:text-ink hover:bg-elevated rounded-lg transition-colors cursor-pointer"
+        >
+          <Menu size={18} strokeWidth={1.75} />
+        </button>
+
         {/* Status pulse dot */}
         <span
           aria-hidden="true"
-          className="w-1.5 h-1.5 rounded-chip bg-mark shrink-0 kx-glow"
+          className="w-1.5 h-1.5 rounded-chip bg-mark shrink-0 kx-glow hidden sm:inline-block"
         />
 
         {activeThread ? (
@@ -27,8 +36,8 @@ export const TopBar: React.FC = () => {
             {activeThread.title}
           </span>
         ) : (
-          <span className="text-xs font-mono text-secondary uppercase tracking-wider">
-            Hybrid Retrieval · Grounded Verification
+          <span className="text-xs font-mono text-secondary uppercase tracking-wider truncate">
+            Knovex Intelligence
           </span>
         )}
       </div>
