@@ -11,11 +11,11 @@
 
 :root {
   --color-bg:          #FFFFFF;
-  --color-sidebar:     #F8FAFC;
+  --color-sidebar:     #FFFFFF;
   --color-surface:     #FFFFFF;
   --color-panel:       #FFFFFF;
-  --color-elevated:    #F1F5F9;
-  --color-line:        #E2E8F0;
+  --color-elevated:    #F8FAFC;
+  --color-line:        #E8ECF0;
   --color-ink:         #0F172A;
   --color-secondary:   #64748B;
   --color-muted:       #94A3B8;
