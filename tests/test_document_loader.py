@@ -56,3 +56,45 @@ def test_empty_file_handling():
     finally:
         if temp_path.exists():
             temp_path.unlink()
+
+
+def test_pdf_table_detection_and_chunking():
+    import pymupdf
+
+    doc = pymupdf.open()
+    page = doc.new_page()
+    page.insert_text((50, 50), "Overview: Financial breakdown.")
+    page.draw_rect(pymupdf.Rect(50, 80, 300, 150))
+    page.draw_line((50, 115), (300, 115))
+    page.draw_line((175, 80), (175, 150))
+    page.insert_text((60, 100), "Category")
+    page.insert_text((185, 100), "Amount")
+    page.insert_text((60, 135), "Revenue")
+    page.insert_text((185, 135), "$500,000")
+    page.insert_text((50, 180), "Conclusion: Targets exceeded.")
+
+    temp_path = Path(tempfile.gettempdir()) / "test_table_doc.pdf"
+    doc.save(str(temp_path))
+    doc.close()
+
+    try:
+        chunks = parse_and_chunk_document(
+            file_path=temp_path,
+            document_id="doc-pdf-table",
+            tenant_id="tenant-xyz",
+        )
+
+        assert len(chunks) >= 2
+        # Check that table chunk is marked with is_table and has markdown format
+        table_chunks = [c for c in chunks if c.metadata.get("is_table")]
+        assert len(table_chunks) >= 1
+        assert "|" in table_chunks[0].page_content
+        assert table_chunks[0].metadata["page"] == 1
+
+        # Check prose chunk
+        prose_chunks = [c for c in chunks if not c.metadata.get("is_table")]
+        assert len(prose_chunks) >= 1
+        assert "Overview: Financial breakdown." in prose_chunks[0].page_content
+    finally:
+        if temp_path.exists():
+            temp_path.unlink()
