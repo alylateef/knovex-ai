@@ -143,21 +143,24 @@ async def register(payload: RegisterRequest, db: AsyncSession = Depends(get_asyn
     if existing_user.scalar_one_or_none():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
 
-    # Find existing tenant by case-insensitive name or create a new one
+    # Check if organization name already exists (case-insensitive)
     existing_tenant_res = await db.execute(
         select(Tenant).where(Tenant.name.ilike(clean_org_name))
     )
-    tenant = existing_tenant_res.scalar_one_or_none()
+    if existing_tenant_res.scalar_one_or_none():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Organization '{clean_org_name}' already exists. Please choose a different name or sign in.",
+        )
 
-    if not tenant:
-        slug = clean_org_name.lower().replace(" ", "-")[:60]
-        # Check if slug collides
-        slug_check = await db.execute(select(Tenant).where(Tenant.slug == slug))
-        if slug_check.scalar_one_or_none():
-            slug = f"{slug}-{uuid.uuid4().hex[:6]}"
-        tenant = Tenant(name=clean_org_name, slug=slug)
-        db.add(tenant)
-        await db.flush()
+    # Create new isolated tenant organization
+    slug = clean_org_name.lower().replace(" ", "-")[:60]
+    slug_check = await db.execute(select(Tenant).where(Tenant.slug == slug))
+    if slug_check.scalar_one_or_none():
+        slug = f"{slug}-{uuid.uuid4().hex[:6]}"
+    tenant = Tenant(name=clean_org_name, slug=slug)
+    db.add(tenant)
+    await db.flush()
 
     # Create User within the tenant organization
     user_role = payload.role if payload.role in ("admin", "user") else "admin"
