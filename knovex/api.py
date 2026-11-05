@@ -38,6 +38,7 @@ from knovex.schemas import (
     DocumentOut,
     DocumentUploadResponse,
     IngestionStatusOut,
+    JoinRequest,
     LoginRequest,
     RegisterRequest,
     TokenResponse,
@@ -138,32 +139,77 @@ async def register(payload: RegisterRequest, db: AsyncSession = Depends(get_asyn
     """Registers a new tenant organization or joins an existing one with admin or member role."""
     clean_org_name = payload.organization_name.strip()
 
+    clean_org_name = payload.organization_name.strip()
+    if not clean_org_name:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Organization name is required")
+
     # Check if user email already exists
     existing_user = await db.execute(select(User).where(User.email == payload.email))
     if existing_user.scalar_one_or_none():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
 
-    # Check if organization name already exists (exact match)
-    existing_tenant_res = await db.execute(
-        select(Tenant).where(Tenant.name == clean_org_name)
-    )
-    if existing_tenant_res.scalar_one_or_none():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Organization '{clean_org_name}' already exists. Please choose a different name or sign in.",
-        )
+    # Generate unique org_code (e.g. FAST-9A2F) — slug is the only globally unique key
+    code_prefix = "".join(c for c in clean_org_name.upper() if c.isalnum())[:8] or "ORG"
+    unique_suffix = uuid.uuid4().hex[:4].upper()
+    org_code = f"{code_prefix}-{unique_suffix}"
 
-    # Create new isolated tenant organization
-    slug = clean_org_name.lower().replace(" ", "-")[:60]
-    slug_check = await db.execute(select(Tenant).where(Tenant.slug == slug))
-    if slug_check.scalar_one_or_none():
-        slug = f"{slug}-{uuid.uuid4().hex[:6]}"
-    tenant = Tenant(name=clean_org_name, slug=slug)
+    # Always create a fresh tenant — name is NOT required to be globally unique
+    tenant = Tenant(name=clean_org_name, slug=org_code)
     db.add(tenant)
     await db.flush()
 
     # Create User within the tenant organization
     user_role = payload.role if payload.role in ("admin", "user") else "admin"
+    user = User(
+        tenant_id=tenant.id,
+        email=payload.email,
+        hashed_password=hash_password(payload.password),
+        full_name=payload.full_name,
+        role=user_role,
+    )
+    db.add(user)
+    await db.commit()
+    await db.refresh(user)
+
+    token, _ = create_access_token(user_id=user.id, tenant_id=tenant.id, role=user.role, email=user.email)
+    return TokenResponse(
+        access_token=token,
+        token_type="bearer",
+        expires_in_minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES,
+        user_id=user.id,
+        tenant_id=tenant.id,
+        role=user.role,
+        email=user.email,
+    )
+
+
+@router.post("/auth/join", response_model=TokenResponse)
+async def join_organization(payload: JoinRequest, db: AsyncSession = Depends(get_async_db)):
+    """Allows a user to join an existing organization using its unique Org Code."""
+    code = payload.org_code.strip()
+    if not code:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Organization code is required")
+
+    # Check if user email already exists
+    existing_user = await db.execute(select(User).where(User.email == payload.email))
+    if existing_user.scalar_one_or_none():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered. Please sign in.")
+
+    # Find tenant by slug / org_code (or exact name match)
+    tenant_res = await db.execute(
+        select(Tenant).where(
+            (Tenant.slug.ilike(code)) | (Tenant.name.ilike(code))
+        )
+    )
+    tenant = tenant_res.scalar_one_or_none()
+    if not tenant:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Organization code '{code}' not found. Please verify the code with your administrator.",
+        )
+
+    # Create User within this existing tenant
+    user_role = payload.role if payload.role in ("admin", "user") else "user"
     user = User(
         tenant_id=tenant.id,
         email=payload.email,
@@ -222,8 +268,23 @@ async def logout(
 
 
 @router.get("/auth/me", response_model=UserOut)
-async def get_me(current_user: User = Depends(get_current_user)):
-    return current_user
+async def get_me(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db),
+):
+    tenant_res = await db.execute(select(Tenant).where(Tenant.id == current_user.tenant_id))
+    tenant = tenant_res.scalar_one_or_none()
+    return UserOut(
+        id=current_user.id,
+        tenant_id=current_user.tenant_id,
+        email=current_user.email,
+        full_name=current_user.full_name,
+        role=current_user.role,
+        is_active=current_user.is_active,
+        created_at=current_user.created_at,
+        organization_name=tenant.name if tenant else "",
+        org_code=tenant.slug if tenant else "",
+    )
 
 
 # ---------------------------------------------------------
