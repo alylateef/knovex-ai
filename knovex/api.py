@@ -138,8 +138,6 @@ async def require_admin(current_user: User = Depends(get_current_user)) -> User:
 async def register(payload: RegisterRequest, db: AsyncSession = Depends(get_async_db)):
     """Registers a new tenant organization or joins an existing one with admin or member role."""
     clean_org_name = payload.organization_name.strip()
-
-    clean_org_name = payload.organization_name.strip()
     if not clean_org_name:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Organization name is required")
 
