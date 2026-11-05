@@ -86,19 +86,29 @@ export const AuthScreen: React.FC = () => {
       </div>
 
       {/* ── Right: Auth form (Mobile + Desktop) ── */}
-      <div className="w-full md:w-1/2 p-6 md:p-8 flex flex-col items-center justify-center bg-bg my-auto">
-        <div className="w-full max-w-sm">
+      <div className="w-full md:w-1/2 p-4 sm:p-6 md:p-8 flex flex-col items-center justify-center bg-bg my-auto">
+        <div className="w-full max-w-sm md:max-w-md bg-surface md:bg-transparent border border-line md:border-transparent rounded-xl md:rounded-none p-6 sm:p-7 md:p-0 shadow-sm md:shadow-none">
 
           {/* Mobile-only brand header */}
-          <div className="md:hidden flex items-center space-x-2.5 mb-6 select-none">
-            <img
-              src="/logo.png"
-              alt="Knovex AI Logo"
-              style={{ width: '28px', height: '28px' }}
-              className="rounded-chip object-cover shrink-0"
-            />
-            <span className="font-sans font-bold text-lg text-ink tracking-tight">Knovex</span>
-            <span className="font-mono text-xs text-muted border border-line px-1 rounded-chip">AI</span>
+          <div className="md:hidden mb-6 select-none">
+            <div className="flex items-center space-x-2.5 mb-2">
+              <img
+                src="/logo.png"
+                alt="Knovex AI Logo"
+                style={{ width: '28px', height: '28px' }}
+                className="rounded-chip object-cover shrink-0"
+              />
+              <span className="font-sans font-bold text-lg text-ink tracking-tight">Knovex</span>
+              <span className="font-mono text-xs text-muted border border-line px-1 rounded-chip">AI</span>
+            </div>
+            <p className="text-xs font-mono text-secondary uppercase tracking-wider mb-3">
+              Document Intelligence Platform
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              <FeaturePill label="Hybrid RAG" />
+              <FeaturePill label="CrossEncoder" />
+              <FeaturePill label="Isolated Tenants" />
+            </div>
           </div>
 
           {/* Tab switcher */}
@@ -227,6 +237,11 @@ export const AuthScreen: React.FC = () => {
                 : 'Sign In'}
             </button>
           </form>
+
+          {/* Mobile-only technical footer */}
+          <div className="md:hidden mt-6 pt-4 border-t border-line text-[11px] font-mono text-muted text-center">
+            Knovex AI · Enterprise Knowledge Architecture
+          </div>
         </div>
       </div>
     </div>
