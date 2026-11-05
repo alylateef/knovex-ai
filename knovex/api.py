@@ -143,9 +143,9 @@ async def register(payload: RegisterRequest, db: AsyncSession = Depends(get_asyn
     if existing_user.scalar_one_or_none():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
 
-    # Check if organization name already exists (case-insensitive)
+    # Check if organization name already exists (exact match)
     existing_tenant_res = await db.execute(
-        select(Tenant).where(Tenant.name.ilike(clean_org_name))
+        select(Tenant).where(Tenant.name == clean_org_name)
     )
     if existing_tenant_res.scalar_one_or_none():
         raise HTTPException(
