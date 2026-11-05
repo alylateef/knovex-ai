@@ -195,11 +195,9 @@ async def join_organization(payload: JoinRequest, db: AsyncSession = Depends(get
     if existing_user.scalar_one_or_none():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered. Please sign in.")
 
-    # Find tenant by slug / org_code (or exact name match)
+    # Find tenant strictly by slug (org_code) only — name is NOT unique
     tenant_res = await db.execute(
-        select(Tenant).where(
-            (Tenant.slug.ilike(code)) | (Tenant.name.ilike(code))
-        )
+        select(Tenant).where(Tenant.slug.ilike(code))
     )
     tenant = tenant_res.scalar_one_or_none()
     if not tenant:
