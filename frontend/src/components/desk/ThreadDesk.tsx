@@ -3,6 +3,7 @@ import { SlidersHorizontal, Loader2 } from 'lucide-react';
 import { useChatStore } from '../../stores/chatStore.ts';
 import { useThreadsStore } from '../../stores/threadsStore.ts';
 import { useUIStore } from '../../stores/uiStore.ts';
+import { useDocsStore } from '../../stores/docsStore.ts';
 import { SegmentedControl } from './SegmentedControl.tsx';
 import { MemoAnswer } from './MemoAnswer.tsx';
 import { RAGMode, TopK } from '../../types.ts';
@@ -59,6 +60,9 @@ export const ThreadDesk: React.FC = () => {
   const { isSubmitting, ask } = useChatStore();
   const { topK, setTopK, mode, setMode } = useUIStore();
   const { activeThreadId, messagesByThread, loadingHistory } = useThreadsStore();
+  const { isUploading, docs } = useDocsStore();
+
+  const isDocProcessing = isUploading || docs.some((d) => d.status === 'PENDING' || d.status === 'PROCESSING');
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const tuneRef = useRef<HTMLDivElement>(null);
@@ -114,7 +118,7 @@ export const ThreadDesk: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const q = input.trim();
-    if (!q || isSubmitting) return;
+    if (!q || isSubmitting || isDocProcessing) return;
     setInput('');
     setIsTuneOpen(false);
     void ask(q, topK, mode);
@@ -158,6 +162,8 @@ export const ThreadDesk: React.FC = () => {
               placeholder={
                 isSubmitting
                   ? 'Searching documents & verifying claims…'
+                  : isDocProcessing
+                  ? 'Processing file… you can type, sending unlocks when ready'
                   : 'Ask a question about your documents…'
               }
               className="flex-1 py-1 px-1 bg-transparent text-ink text-xs font-sans placeholder:text-muted focus:outline-none disabled:opacity-50 min-w-0"
@@ -225,11 +231,15 @@ export const ThreadDesk: React.FC = () => {
               {/* Compact professional Ask button with equal symmetric padding */}
               <button
                 type="submit"
-                disabled={isSubmitting || !input.trim()}
-                title="Send question (Enter)"
+                disabled={isSubmitting || isDocProcessing || !input.trim()}
+                title={
+                  isDocProcessing
+                    ? 'Please wait: file is still being processed and indexed'
+                    : 'Send question (Enter)'
+                }
                 aria-label="Ask"
                 className={`h-6 px-3 flex items-center justify-center text-xs font-sans font-semibold rounded-md transition-all duration-150 shrink-0 select-none ${
-                  input.trim() && !isSubmitting
+                  input.trim() && !isSubmitting && !isDocProcessing
                     ? 'bg-mark text-white hover:bg-mark-hover shadow-xs cursor-pointer'
                     : 'bg-elevated text-muted cursor-not-allowed opacity-50'
                 }`}
@@ -238,6 +248,11 @@ export const ThreadDesk: React.FC = () => {
                   <span className="flex items-center space-x-1">
                     <Loader2 size={11} className="animate-spin" strokeWidth={2.2} />
                     <span>Searching</span>
+                  </span>
+                ) : isDocProcessing ? (
+                  <span className="flex items-center space-x-1 text-amber-500 dark:text-amber-400">
+                    <Loader2 size={11} className="animate-spin" strokeWidth={2.2} />
+                    <span>Processing</span>
                   </span>
                 ) : (
                   'Ask'
@@ -248,9 +263,16 @@ export const ThreadDesk: React.FC = () => {
 
           {/* Clean minimal metadata hint */}
           <div className="mt-1 px-1 flex items-center justify-between text-[11px] font-mono text-muted select-none">
-            <span className="truncate">
-              Grounded retrieval · Source verified
-            </span>
+            {isDocProcessing ? (
+              <span className="text-amber-500 dark:text-amber-400 flex items-center space-x-1.5 font-sans font-medium text-xs">
+                <Loader2 size={11} className="animate-spin shrink-0" />
+                <span>File is processing — you can type now, sending unlocks once ready.</span>
+              </span>
+            ) : (
+              <span className="truncate">
+                Grounded retrieval · Source verified
+              </span>
+            )}
             <span className="hidden sm:inline-block">
               Press <kbd className="px-1 py-0.2 bg-elevated border border-line rounded text-[10px] text-secondary font-mono">↵</kbd>
             </span>
