@@ -37,6 +37,14 @@ class RegisterRequest(BaseModel):
     role: Optional[str] = Field(default="admin", pattern="^(admin|user)$")
 
 
+class JoinRequest(BaseModel):
+    org_code: str = Field(..., min_length=2, max_length=64)
+    email: EmailStr
+    password: str = Field(..., min_length=8)
+    full_name: str = Field(default="", max_length=128)
+    role: Optional[str] = Field(default="user", pattern="^(admin|user)$")
+
+
 class UserOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -47,6 +55,8 @@ class UserOut(BaseModel):
     role: str
     is_active: bool
     created_at: datetime
+    organization_name: Optional[str] = ""
+    org_code: Optional[str] = ""
 
 
 class TenantOut(BaseModel):

@@ -82,12 +82,12 @@ export const Shelf: React.FC = () => {
             </button>
           </div>
           <div className="mt-2 flex items-center space-x-2">
-            <div className="w-1.5 h-1.5 rounded-chip bg-mark" />
-            <span className="text-xs font-mono text-secondary truncate" title={user?.email}>
-              {user?.email.split('@')[1] || 'workspace'}
+            <div className="w-1.5 h-1.5 rounded-chip bg-mark shrink-0" />
+            <span className="text-xs font-mono text-secondary truncate font-medium" title={user?.organization_name || user?.email}>
+              {user?.organization_name || user?.email.split('@')[1] || 'workspace'}
             </span>
             <span className="text-xs font-mono text-muted">·</span>
-            <span className="text-xs font-mono text-secondary capitalize">{user?.role || 'user'}</span>
+            <span className="text-xs font-mono text-secondary capitalize shrink-0">{user?.role || 'user'}</span>
           </div>
         </div>
 
@@ -154,6 +154,12 @@ export const Shelf: React.FC = () => {
               {user?.role || 'user'}
             </span>
           </div>
+          {user?.org_code && (
+            <div className="text-[10px] font-mono text-muted flex items-center gap-1 mt-0.5" title="Share this code with teammates to join your workspace">
+              <span>Code:</span>
+              <span className="font-semibold text-secondary select-all">{user.org_code}</span>
+            </div>
+          )}
         </div>
         <button
           type="button"

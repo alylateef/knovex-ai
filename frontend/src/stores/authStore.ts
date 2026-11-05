@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { User } from '../types.ts';
-import { apiGetMe, apiLogin, apiLogout, apiRegister, getAccessToken } from '../api.ts';
+import { apiGetMe, apiJoin, apiLogin, apiLogout, apiRegister, getAccessToken } from '../api.ts';
 import { useThreadsStore } from './threadsStore.ts';
 import { useDocsStore } from './docsStore.ts';
 import { useCitationStore } from './citationStore.ts';
@@ -13,6 +13,7 @@ interface AuthState {
   init: () => Promise<void>;
   login: (email: string, pass: string) => Promise<void>;
   register: (org: string, email: string, pass: string, name?: string, role?: 'admin' | 'user') => Promise<void>;
+  join: (orgCode: string, email: string, pass: string, name?: string, role?: 'admin' | 'user') => Promise<void>;
   logout: () => Promise<void>;
   clearError: () => void;
 }
@@ -58,6 +59,19 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ user, token: res.access_token, isLoading: false, error: null });
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Registration failed';
+      set({ isLoading: false, error: msg });
+      throw err;
+    }
+  },
+
+  join: async (org_code, email, password, full_name, role = 'user') => {
+    set({ isLoading: true, error: null });
+    try {
+      const res = await apiJoin({ org_code, email, password, full_name, role });
+      const user = await apiGetMe();
+      set({ user, token: res.access_token, isLoading: false, error: null });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Join failed';
       set({ isLoading: false, error: msg });
       throw err;
     }

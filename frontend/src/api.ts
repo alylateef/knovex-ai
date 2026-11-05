@@ -30,6 +30,7 @@ export const AUTH_FIELDS = {
 export const ENDPOINTS = {
   LOGIN: '/api/v1/auth/login',
   REGISTER: '/api/v1/auth/register',
+  JOIN: '/api/v1/auth/join',
   LOGOUT: '/api/v1/auth/logout',
   ME: '/api/v1/auth/me',
   DOCUMENTS: '/api/v1/documents',
@@ -147,6 +148,22 @@ export async function apiRegister(payload: {
   }
 
   const data = await request<AuthResponse>(ENDPOINTS.REGISTER, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  setAccessToken(data.access_token);
+  return data;
+}
+
+export async function apiJoin(payload: {
+  org_code: string;
+  email: string;
+  password: string;
+  full_name?: string;
+  role?: 'admin' | 'user';
+}): Promise<AuthResponse> {
+  const data = await request<AuthResponse>(ENDPOINTS.JOIN, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),

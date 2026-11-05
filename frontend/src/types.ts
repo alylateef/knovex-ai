@@ -8,6 +8,8 @@ export interface User {
   role: UserRole;
   is_active: boolean;
   created_at: string;
+  organization_name?: string;
+  org_code?: string;
 }
 
 export interface AuthResponse {
