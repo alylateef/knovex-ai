@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import List, Optional
 from langchain_core.documents import Document
-from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_text_splitters import MarkdownTextSplitter, RecursiveCharacterTextSplitter
 
 from knovex.config import get_settings
 
@@ -17,37 +17,44 @@ def parse_and_chunk_document(
 ) -> List[Document]:
     """
     Parses and chunks uploaded documents into structured passages.
+    Uses pymupdf4llm for PDFs — preserves tables as markdown, maintains headers.
     Preserves document, tenant, and page metadata across chunk boundaries.
     """
-    from langchain_community.document_loaders import PyMuPDFLoader, TextLoader
+    from langchain_community.document_loaders import TextLoader
 
     chunk_size = chunk_size or settings.CHUNK_SIZE
     chunk_overlap = chunk_overlap or settings.CHUNK_OVERLAP
-
-    # Recursive chunking with overlap across paragraph and sentence boundaries
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=chunk_size,
-        chunk_overlap=chunk_overlap,
-        separators=["\n\n", "\n", ". ", " ", ""],
-    )
 
     file_ext = file_path.suffix.lower()
     filename = file_path.name
 
     # 1. Document loader selection
     if file_ext == ".pdf":
-        loader = PyMuPDFLoader(str(file_path))
-        raw_docs = loader.load()
+        # pymupdf4llm converts PDF → Markdown, preserving tables and structure
+        import pymupdf4llm
+        md_text = pymupdf4llm.to_markdown(str(file_path))
+
+        # Split markdown-aware: respects headers and table boundaries
+        text_splitter = MarkdownTextSplitter(
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+        )
+        raw_docs = [Document(page_content=md_text, metadata={"source": filename, "page": 0})]
+
     elif file_ext in {".txt", ".md"}:
         loader = TextLoader(str(file_path), encoding="utf-8")
         raw_docs = loader.load()
+        text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+            separators=["\n\n", "\n", ". ", " ", ""],
+        )
     else:
         raise ValueError(f"Unsupported file type: {file_ext}")
 
-    total_pages = len(raw_docs) if file_ext == ".pdf" else 1
-
     # 2. Split into overlapping chunks
     split_docs = text_splitter.split_documents(raw_docs)
+    total_pages = len(split_docs) if file_ext == ".pdf" else 1
 
     # 3. Attach tenant and index metadata
     chunks: List[Document] = []
@@ -56,7 +63,8 @@ def parse_and_chunk_document(
         if not content:
             continue
 
-        page_num = doc.metadata.get("page", 0) + 1 if file_ext == ".pdf" else 1
+        # For markdown-converted PDFs, page is estimated by chunk index
+        page_num = (idx // max(1, len(split_docs) // max(1, total_pages))) + 1 if file_ext == ".pdf" else 1
 
         chunks.append(
             Document(
