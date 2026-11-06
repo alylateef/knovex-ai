@@ -14,7 +14,7 @@ import { ThreadList } from './ThreadList.tsx';
 const KnovexWordmark: React.FC = () => (
   <div className="flex items-center space-x-2.5 select-none">
     <img
-      src="/logo.png"
+      src="/logo.svg"
       alt="Knovex AI Logo"
       style={{ width: '22px', height: '22px' }}
       className="rounded-chip object-cover shrink-0"

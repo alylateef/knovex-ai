@@ -15,7 +15,7 @@ const EmptyThreadState: React.FC = () => (
   <div className="h-full flex flex-col items-center justify-center text-center px-8 select-none">
     <div className="mb-5">
       <img
-        src="/logo.png"
+        src="/logo.svg"
         alt="Knovex AI"
         style={{ width: '42px', height: '42px' }}
         className="rounded-chip object-cover mx-auto opacity-85"

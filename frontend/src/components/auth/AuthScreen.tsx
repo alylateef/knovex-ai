@@ -54,7 +54,7 @@ export const AuthScreen: React.FC = () => {
           {/* Wordmark */}
           <div className="flex items-center space-x-2.5 mb-7">
             <img
-              src="/logo.png"
+              src="/logo.svg"
               alt="Knovex AI Logo"
               style={{ width: '28px', height: '28px' }}
               className="rounded-chip object-cover shrink-0"
@@ -99,7 +99,7 @@ export const AuthScreen: React.FC = () => {
           <div className="md:hidden mb-6 select-none">
             <div className="flex items-center space-x-2.5 mb-2">
               <img
-                src="/logo.png"
+                src="/logo.svg"
                 alt="Knovex AI Logo"
                 style={{ width: '28px', height: '28px' }}
                 className="rounded-chip object-cover shrink-0"
