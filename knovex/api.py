@@ -156,14 +156,13 @@ async def register(payload: RegisterRequest, db: AsyncSession = Depends(get_asyn
     db.add(tenant)
     await db.flush()
 
-    # Create User within the tenant organization
-    user_role = payload.role if payload.role in ("admin", "user") else "admin"
+    # Org creator is always the Admin/Owner of the new workspace
     user = User(
         tenant_id=tenant.id,
         email=payload.email,
         hashed_password=hash_password(payload.password),
         full_name=payload.full_name,
-        role=user_role,
+        role="admin",
     )
     db.add(user)
     await db.commit()
@@ -204,14 +203,13 @@ async def join_organization(payload: JoinRequest, db: AsyncSession = Depends(get
             detail=f"Organization code '{code}' not found. Please verify the code with your administrator.",
         )
 
-    # Create User within this existing tenant
-    user_role = payload.role if payload.role in ("admin", "user") else "user"
+    # Teammate joining an existing workspace is always a standard User (Member)
     user = User(
         tenant_id=tenant.id,
         email=payload.email,
         hashed_password=hash_password(payload.password),
         full_name=payload.full_name,
-        role=user_role,
+        role="user",
     )
     db.add(user)
     await db.commit()

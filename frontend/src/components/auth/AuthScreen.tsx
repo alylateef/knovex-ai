@@ -23,7 +23,6 @@ export const AuthScreen: React.FC = () => {
   const [orgName, setOrgName] = useState('');
   const [orgCode, setOrgCode] = useState('');
   const [fullName, setFullName] = useState('');
-  const [role, setRole] = useState<'admin' | 'user'>('admin');
 
   const { login, register, join, isLoading, error, clearError } = useAuthStore();
 
@@ -33,10 +32,10 @@ export const AuthScreen: React.FC = () => {
 
     if (mode === 'create') {
       if (!orgName.trim() || !email.trim() || password.length < 8) return;
-      await register(orgName.trim(), email.trim(), password, fullName.trim() || undefined, role);
+      await register(orgName.trim(), email.trim(), password, fullName.trim() || undefined, 'admin');
     } else if (mode === 'join') {
       if (!orgCode.trim() || !email.trim() || password.length < 8) return;
-      await join(orgCode.trim(), email.trim(), password, fullName.trim() || undefined, role);
+      await join(orgCode.trim(), email.trim(), password, fullName.trim() || undefined, 'user');
     } else {
       if (!email.trim() || !password) return;
       await login(email.trim(), password);
@@ -211,39 +210,6 @@ export const AuthScreen: React.FC = () => {
                   placeholder="Jane Doe"
                   className={inputCls}
                 />
-              </div>
-            )}
-
-            {/* Role selector for create/join */}
-            {(mode === 'create' || mode === 'join') && (
-              <div>
-                <label className={labelCls}>Account Role</label>
-                <div className="grid grid-cols-2 gap-2 mt-1">
-                  <button
-                    type="button"
-                    onClick={() => setRole('admin')}
-                    className={`px-3 py-2 text-xs font-mono rounded-input border transition-all text-left cursor-pointer ${
-                      role === 'admin'
-                        ? 'border-mark bg-mark/10 text-ink font-semibold'
-                        : 'border-line bg-surface text-secondary hover:text-ink'
-                    }`}
-                  >
-                    <div className="font-bold text-ink mb-0.5">Admin</div>
-                    <div className="text-[10px] text-muted">Upload & delete docs</div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setRole('user')}
-                    className={`px-3 py-2 text-xs font-mono rounded-input border transition-all text-left cursor-pointer ${
-                      role === 'user'
-                        ? 'border-mark bg-mark/10 text-ink font-semibold'
-                        : 'border-line bg-surface text-secondary hover:text-ink'
-                    }`}
-                  >
-                    <div className="font-bold text-ink mb-0.5">User</div>
-                    <div className="text-[10px] text-muted">Chat & ask questions</div>
-                  </button>
-                </div>
               </div>
             )}
 
