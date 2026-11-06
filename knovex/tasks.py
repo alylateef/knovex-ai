@@ -99,7 +99,7 @@ def run_ingestion_pipeline(document_id: str, tenant_id: str) -> bool:
                         document_id=document_id,
                         chunk_index=c.metadata.get("chunk_index", i),
                         page_number=c.metadata.get("page", 1),
-                        content=c.page_content,
+                        content=c.page_content.replace("\x00", ""),
                         qdrant_point_id=chunk_ids[i],
                         char_count=len(c.page_content),
                     )
@@ -107,9 +107,16 @@ def run_ingestion_pipeline(document_id: str, tenant_id: str) -> bool:
                 ]
                 db.add_all(chunk_records)
 
+                total_pages_val = chunks[0].metadata.get("total_pages", 1) if (chunks and "total_pages" in chunks[0].metadata) else 1
                 doc.total_chunks = len(chunks)
-                if chunks and "total_pages" in chunks[0].metadata:
-                    doc.total_pages = chunks[0].metadata["total_pages"]
+                doc.total_pages = total_pages_val
+
+                from sqlalchemy import update
+                db.execute(
+                    update(Document)
+                    .where(Document.id == document_id)
+                    .values(total_chunks=len(chunks), total_pages=total_pages_val)
+                )
 
             # 5. Mark as completed
             if job:

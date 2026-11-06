@@ -12,7 +12,7 @@ import redis.asyncio as aioredis
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Security, UploadFile, status
 from fastapi.responses import StreamingResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from sqlalchemy import select
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from qdrant_client.http import models as qmodels
 
@@ -355,13 +355,101 @@ async def list_documents(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db),
 ):
-    """Lists all documents belonging to the authenticated tenant."""
+    """Lists all documents belonging to the authenticated tenant, with live ingestion status and dynamic chunk healing."""
     res = await db.execute(
         select(Document)
         .where(Document.tenant_id == current_user.tenant_id)
         .order_by(Document.created_at.desc())
     )
-    return res.scalars().all()
+    docs = res.scalars().all()
+    if not docs:
+        return []
+
+    doc_ids = [d.id for d in docs]
+    jobs_res = await db.execute(
+        select(IngestionJob)
+        .where(
+            IngestionJob.document_id.in_(doc_ids),
+            IngestionJob.tenant_id == current_user.tenant_id,
+        )
+        .order_by(IngestionJob.created_at.desc())
+    )
+    all_jobs = jobs_res.scalars().all()
+    job_map = {}
+    for j in all_jobs:
+        if j.document_id not in job_map:
+            job_map[j.document_id] = j
+
+    output = []
+    needs_commit = False
+
+    for d in docs:
+        job = job_map.get(d.id)
+        chunks_count = d.total_chunks
+
+        # Self-healing: if total_chunks is 0, check DocumentChunk table or Qdrant points
+        if chunks_count == 0:
+            count_res = await db.execute(
+                select(func.count(DocumentChunk.id)).where(DocumentChunk.document_id == d.id)
+            )
+            c_count = count_res.scalar() or 0
+            if c_count > 0:
+                chunks_count = c_count
+                d.total_chunks = c_count
+                needs_commit = True
+            else:
+                try:
+                    q_client = get_qdrant_client()
+                    filter_cond = qmodels.Filter(
+                        must=[
+                            qmodels.FieldCondition(
+                                key="metadata.document_id",
+                                match=qmodels.MatchValue(value=d.id),
+                            ),
+                            qmodels.FieldCondition(
+                                key="metadata.tenant_id",
+                                match=qmodels.MatchValue(value=current_user.tenant_id),
+                            ),
+                        ]
+                    )
+                    q_count = q_client.count(
+                        collection_name=settings.QDRANT_COLLECTION_NAME,
+                        count_filter=filter_cond,
+                    ).count
+                    if q_count > 0:
+                        chunks_count = q_count
+                        d.total_chunks = q_count
+                        needs_commit = True
+                except Exception:
+                    pass
+
+        status_val = job.status if job else ("COMPLETED" if chunks_count > 0 else "PENDING")
+        progress_val = job.progress_percent if job else (100 if chunks_count > 0 else 0)
+        error_val = job.error_message if job else None
+
+        output.append(
+            DocumentOut(
+                id=d.id,
+                tenant_id=d.tenant_id,
+                filename=d.filename,
+                file_size=d.file_size,
+                mime_type=d.mime_type,
+                total_pages=d.total_pages,
+                total_chunks=chunks_count,
+                created_at=d.created_at,
+                status=status_val,
+                progress_percent=progress_val,
+                error_message=error_val,
+            )
+        )
+
+    if needs_commit:
+        try:
+            await db.commit()
+        except Exception:
+            pass
+
+    return output
 
 
 @router.get("/documents/{document_id}/status", response_model=IngestionStatusOut)

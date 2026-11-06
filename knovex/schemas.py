@@ -84,6 +84,9 @@ class DocumentOut(BaseModel):
     total_pages: Optional[int]
     total_chunks: int
     created_at: datetime
+    status: Optional[str] = "COMPLETED"
+    progress_percent: Optional[int] = 100
+    error_message: Optional[str] = None
 
 
 class DocumentUploadResponse(BaseModel):
