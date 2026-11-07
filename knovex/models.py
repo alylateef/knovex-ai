@@ -65,7 +65,7 @@ class Document(Base):
     filename: Mapped[str] = mapped_column(String(255), nullable=False)
     file_path: Mapped[str] = mapped_column(String(1024), nullable=False)
     file_size: Mapped[int] = mapped_column(Integer, nullable=False)
-    mime_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    mime_type: Mapped[str] = mapped_column(String(255), nullable=False)
     file_hash: Mapped[Optional[str]] = mapped_column(String(64), index=True, nullable=True)
     total_pages: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, default=1)
     total_chunks: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
