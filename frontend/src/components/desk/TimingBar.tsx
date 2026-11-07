@@ -16,7 +16,7 @@ export const TimingBar: React.FC<TimingBarProps> = ({ timings }) => {
   return (
     <div className="mt-5 pt-3 border-t border-line">
       {/* Segment bar */}
-      <div className="w-full h-1 bg-elevated flex overflow-hidden rounded-chip mb-2">
+      <div className="w-full h-0.5 bg-elevated flex overflow-hidden rounded-chip mb-2">
         {segments.map((seg, idx) => {
           const style =
             idx === 0

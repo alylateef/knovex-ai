@@ -152,7 +152,7 @@ export const ThreadDesk: React.FC = () => {
       <div className="p-2.5 md:px-6 md:pb-3 md:pt-2 border-t border-line bg-surface/90 backdrop-blur shrink-0 relative">
         <form onSubmit={handleSubmit} className="max-w-prose mx-auto">
           {/* Main unified compact input bar with futuristic blue border */}
-          <div className="relative flex items-center bg-bg border border-mark/45 shadow-[0_0_12px_rgba(37,99,235,0.07)] dark:shadow-[0_0_14px_rgba(56,189,248,0.12)] rounded-lg px-2.5 py-1.5 transition-all duration-200 hover:border-mark/70 focus-within:border-mark focus-within:ring-2 focus-within:ring-mark/20 focus-within:shadow-[0_0_16px_rgba(37,99,235,0.15)]">
+          <div className="relative flex items-center bg-bg border border-mark/45 shadow-[0_0_12px_rgba(37,99,235,0.07)] dark:shadow-[0_0_14px_rgba(217,119,87,0.15)] rounded-lg px-2.5 py-1.5 transition-all duration-200 hover:border-mark/70 focus-within:border-mark focus-within:ring-2 focus-within:ring-mark/20 focus-within:shadow-[0_0_16px_rgba(37,99,235,0.15)] dark:focus-within:shadow-[0_0_16px_rgba(217,119,87,0.22)]">
             <input
               ref={inputRef}
               type="text"

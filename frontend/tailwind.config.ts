@@ -65,6 +65,12 @@ const config: Config = {
       mono:  ['"JetBrains Mono"', 'monospace'],
     },
     extend: {
+      borderWidth: {
+        DEFAULT: '0.5px',
+        '0.5': '0.5px',
+        'hairline': '0.5px',
+        '1': '1px',
+      },
       width: {
         shelf:  '250px',
         source: '370px',
