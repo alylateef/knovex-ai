@@ -16,6 +16,7 @@ from knovex.config import get_settings
 from knovex.database import get_sync_db_context
 from knovex.document_loader import parse_and_chunk_document
 from knovex.models import Document, DocumentChunk, IngestionJob
+from knovex.observability import tenant_id_ctx
 from knovex.rag import get_vector_store
 
 logger = logging.getLogger(__name__)
@@ -30,6 +31,7 @@ def run_ingestion_pipeline(document_id: str, tenant_id: str) -> bool:
     3. Indexes vectors in Qdrant with tenant isolation
     4. Records chunk records and updates job status in PostgreSQL
     """
+    t_token = tenant_id_ctx.set(tenant_id)
     try:
         with get_sync_db_context() as db:
             # 1. Fetch document and job records
@@ -143,6 +145,8 @@ def run_ingestion_pipeline(document_id: str, tenant_id: str) -> bool:
         except Exception:
             pass
         return False
+    finally:
+        tenant_id_ctx.reset(t_token)
 
 
 

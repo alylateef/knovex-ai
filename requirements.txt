@@ -23,6 +23,7 @@ redis>=5.0.8
 # LangChain, LangGraph & AI Ecosystem
 langchain>=0.3.0
 langchain-core>=0.3.0
+langsmith>=0.1.14
 langchain-community>=0.3.0
 langchain-text-splitters>=0.3.0
 langgraph>=0.2.20

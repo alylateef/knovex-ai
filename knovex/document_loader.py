@@ -145,6 +145,14 @@ def parse_and_chunk_document(
                             Document(page_content=table_md, metadata={"page": 1, "is_table": True})
                         )
 
+        # Safety fallback: if iterchildren() extracted no chunks, use standard doc.paragraphs
+        if not all_split_docs and doc.paragraphs:
+            full_text = "\n\n".join(p.text.strip() for p in doc.paragraphs if p.text.strip())
+            if full_text:
+                all_split_docs = text_splitter.split_documents([
+                    Document(page_content=full_text, metadata={"page": 1})
+                ])
+
     elif file_ext == ".csv":
         import csv
         import io

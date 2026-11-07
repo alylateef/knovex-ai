@@ -22,6 +22,11 @@ ALLOWED_MIME_TYPES = {
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     "application/msword",
     "application/octet-stream",
+    "application/zip",
+    "application/x-zip-compressed",
+    "application/wps-office.docx",
+    "application/vnd.ms-word",
+    "application/x-msword",
 }
 
 
@@ -52,6 +57,12 @@ async def save_uploaded_file(tenant_id: str, file: UploadFile) -> Tuple[Path, st
 
     clean_filename = sanitize_filename(file.filename)
     file_ext = Path(clean_filename).suffix.lower()
+
+    if file_ext == ".doc":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Legacy Word (.doc) format is not supported. Please save or export your document as .docx (Word Document) and try again."
+        )
 
     if file_ext not in ALLOWED_EXTENSIONS:
         raise HTTPException(

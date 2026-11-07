@@ -13,9 +13,11 @@ from fastapi.staticfiles import StaticFiles
 from knovex.api import router as api_router
 from knovex.config import get_settings
 from knovex.database import Base, async_engine
+from knovex.observability import RequestTracingMiddleware, init_langsmith, setup_logging
 from knovex.rag import get_dense_embeddings, get_sparse_embeddings, get_cross_encoder
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+# Standard structured logging
+setup_logging(level="INFO")
 logger = logging.getLogger("knovex")
 settings = get_settings()
 
@@ -24,6 +26,12 @@ settings = get_settings()
 async def lifespan(app: FastAPI):
     # Startup: ensure tables exist and directories are ready
     logger.info("Initializing Knovex AI application...")
+    init_langsmith(
+        tracing_enabled=settings.LANGCHAIN_TRACING_V2,
+        api_key=settings.LANGCHAIN_API_KEY,
+        project=settings.LANGCHAIN_PROJECT,
+        endpoint=settings.LANGCHAIN_ENDPOINT,
+    )
     settings.UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
     Path("./data/qdrant_local").mkdir(parents=True, exist_ok=True)
     async with async_engine.begin() as conn:
@@ -68,6 +76,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Standard Request Tracing & Timing Middleware (assigns and logs X-Request-ID and execution time)
+app.add_middleware(RequestTracingMiddleware)
 
 # Mount REST API
 app.include_router(api_router)

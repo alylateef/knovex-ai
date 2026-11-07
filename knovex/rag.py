@@ -15,6 +15,7 @@ from qdrant_client import QdrantClient
 from qdrant_client.http import models as qmodels
 
 from knovex.config import get_settings
+from knovex.observability import get_langsmith_config
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -390,7 +391,13 @@ def run_rag_pipeline(question: str, tenant_id: str, rerank: bool = True) -> Dict
         "citations": [],
     }
     graph = get_rag_graph()
-    result = graph.invoke(initial_state)
+    run_config = get_langsmith_config(
+        tenant_id=tenant_id,
+        run_name=f"knovex_rag_{tenant_id[:8]}",
+        mode="sync",
+        extra_metadata={"rerank": rerank},
+    )
+    result = graph.invoke(initial_state, config=run_config)
     return result
 
 
@@ -449,10 +456,19 @@ def stream_rag_pipeline(question: str, tenant_id: str, rerank: bool = True):
     full_answer_parts = []
     if llm is not None:
         try:
-            for chunk in llm.stream([
-                SystemMessage(content=SYSTEM_PROMPT),
-                HumanMessage(content=user_prompt),
-            ]):
+            stream_config = get_langsmith_config(
+                tenant_id=tenant_id,
+                run_name=f"knovex_stream_{tenant_id[:8]}",
+                mode="streaming",
+                extra_metadata={"evidence_status": "sufficient"},
+            )
+            for chunk in llm.stream(
+                [
+                    SystemMessage(content=SYSTEM_PROMPT),
+                    HumanMessage(content=user_prompt),
+                ],
+                config=stream_config,
+            ):
                 token = chunk.content
                 if token:
                     full_answer_parts.append(token)

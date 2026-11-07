@@ -73,12 +73,21 @@ class Settings(BaseSettings):
     # Rate Limiting
     RATE_LIMIT_REQUESTS_PER_MINUTE: int = 60
 
-    # Tracing
+    # Tracing & Observability (LangSmith)
     LANGCHAIN_TRACING_V2: bool = False
     LANGCHAIN_API_KEY: Optional[str] = None
     LANGCHAIN_PROJECT: str = "knovex-ai"
+    LANGCHAIN_ENDPOINT: str = "https://api.smith.langchain.com"
 
 
 @lru_cache()
 def get_settings() -> Settings:
-    return Settings()
+    settings = Settings()
+    # Synchronize LangSmith configuration to os.environ for LangChain/LangGraph runtime
+    if settings.LANGCHAIN_TRACING_V2 and settings.LANGCHAIN_API_KEY:
+        import os
+        os.environ["LANGCHAIN_TRACING_V2"] = "true"
+        os.environ["LANGCHAIN_API_KEY"] = settings.LANGCHAIN_API_KEY
+        os.environ["LANGCHAIN_PROJECT"] = settings.LANGCHAIN_PROJECT
+        os.environ["LANGCHAIN_ENDPOINT"] = settings.LANGCHAIN_ENDPOINT
+    return settings
