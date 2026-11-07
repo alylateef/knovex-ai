@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { RAGMode, TopK } from '../types.ts';
 import { apiAskQuestion } from '../api.ts';
 import { useThreadsStore } from './threadsStore.ts';
+import { SmoothStreamer } from '../lib/smoothStreamer.ts';
 
 interface ChatState {
   isSubmitting: boolean;
@@ -20,6 +21,7 @@ export const useChatStore = create<ChatState>((set) => ({
       id: tempId,
       question,
       loading: true as const,
+      streaming: false,
       created_at: new Date().toISOString(),
     };
 
@@ -33,6 +35,20 @@ export const useChatStore = create<ChatState>((set) => ({
     let receivedConvId = activeThreadId;
     let chunksMap: Record<string, any> = {};
 
+    const streamer = new SmoothStreamer((smoothText) => {
+      const targetThreadId = receivedConvId ?? pendingThreadId;
+      threadsStore.updateMessage(targetThreadId, tempId, {
+        loading: false,
+        streaming: true,
+        answer: {
+          sentences: [{ text: smoothText, citations: Object.keys(chunksMap) }],
+          chunks: chunksMap,
+          timings: { retrieval_ms: 0, rerank_ms: 0, llm_ms: 0 },
+          abstained: false,
+        },
+      });
+    });
+
     try {
       const { answer, conversation_id } = await apiAskQuestion({
         question,
@@ -44,18 +60,12 @@ export const useChatStore = create<ChatState>((set) => ({
           chunksMap = chunks;
         },
         onDelta: (_delta, accumulated) => {
-          const targetThreadId = receivedConvId ?? pendingThreadId;
-          threadsStore.updateMessage(targetThreadId, tempId, {
-            loading: false,
-            answer: {
-              sentences: [{ text: accumulated, citations: Object.keys(chunksMap) }],
-              chunks: chunksMap,
-              timings: { retrieval_ms: 150, rerank_ms: 250, llm_ms: 500 },
-              abstained: false,
-            },
-          });
+          streamer.append(accumulated);
         },
       });
+
+      // Smoothly flush any remaining characters in the 60fps animation buffer
+      await streamer.finish();
 
       const wasNew = !activeThreadId;
 
@@ -83,7 +93,7 @@ export const useChatStore = create<ChatState>((set) => ({
             messagesByThread: {
               ...withoutPending,
               [conversation_id]: pendingMsgs.map((m) =>
-                m.id === tempId ? { ...m, answer, loading: false } : m
+                m.id === tempId ? { ...m, answer, loading: false, streaming: false } : m
               ),
             },
           };
@@ -93,7 +103,7 @@ export const useChatStore = create<ChatState>((set) => ({
         threadsStore.fetchThreads();
       } else {
         // Update message in existing thread
-        threadsStore.updateMessage(conversation_id, tempId, { answer, loading: false });
+        threadsStore.updateMessage(conversation_id, tempId, { answer, loading: false, streaming: false });
 
         // Refresh the thread's updated_at in the list
         threadsStore.updateThread(conversation_id, { updated_at: new Date().toISOString() });
@@ -101,6 +111,7 @@ export const useChatStore = create<ChatState>((set) => ({
 
       set({ isSubmitting: false });
     } catch (err) {
+      streamer.stop();
       const errMsg = err instanceof Error ? err.message : 'Failed to query documents';
 
       const currentActive = useThreadsStore.getState().activeThreadId;
@@ -108,6 +119,7 @@ export const useChatStore = create<ChatState>((set) => ({
       useThreadsStore.getState().updateMessage(targetThread, tempId, {
         error: errMsg,
         loading: false,
+        streaming: false,
       });
       set({ isSubmitting: false });
     }

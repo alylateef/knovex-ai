@@ -9,12 +9,14 @@ interface ClaimSentenceViewProps {
   sentence: ClaimSentence;
   chunks: Record<string, SourceChunk>;
   chunkNumberMap: Map<string, number>;
+  isStreaming?: boolean;
 }
 
 export const ClaimSentenceView: React.FC<ClaimSentenceViewProps> = ({
   sentence,
   chunks,
   chunkNumberMap,
+  isStreaming: _isStreaming,
 }) => {
   const { activeNumber, selectCitation } = useCitationStore();
   const { setInspectorOpen } = useUIStore();

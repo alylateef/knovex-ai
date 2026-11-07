@@ -9,6 +9,7 @@ interface MemoAnswerProps {
   question: string;
   answer?: AnswerResponse;
   loading?: boolean;
+  streaming?: boolean;
   error?: string;
 }
 
@@ -21,10 +22,19 @@ const ThinkingDots: React.FC = () => (
   </span>
 );
 
+/** Blinking cursor shown while tokens are streaming in */
+const StreamCursor: React.FC = () => (
+  <span
+    className="inline-block w-0.5 h-4 bg-mark align-middle ml-0.5 rounded-chip"
+    style={{ animation: 'kx-glow 0.9s ease-in-out infinite' }}
+  />
+);
+
 export const MemoAnswer: React.FC<MemoAnswerProps> = ({
   question,
   answer,
   loading,
+  streaming,
   error,
 }) => {
   const chunkNumberMap = answer ? numberChunks(answer.sentences) : new Map<string, number>();
@@ -82,11 +92,15 @@ export const MemoAnswer: React.FC<MemoAnswerProps> = ({
                     sentence={sent}
                     chunks={answer.chunks}
                     chunkNumberMap={chunkNumberMap}
+                    isStreaming={streaming && idx === answer.sentences.length - 1}
                   />
                 ))}
+                {/* Blinking cursor during active streaming */}
+                {streaming && <StreamCursor />}
               </div>
             )}
-            <TimingBar timings={answer.timings} />
+            {/* Only show timing bar when streaming is complete */}
+            {!streaming && <TimingBar timings={answer.timings} />}
           </div>
         )}
       </div>

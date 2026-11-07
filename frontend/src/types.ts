@@ -94,6 +94,7 @@ export interface MessageItem {
   question: string;
   answer?: AnswerResponse;
   loading?: boolean;
+  streaming?: boolean;
   error?: string;
   created_at: string;
 }

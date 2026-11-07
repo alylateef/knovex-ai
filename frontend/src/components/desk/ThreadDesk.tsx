@@ -141,6 +141,7 @@ export const ThreadDesk: React.FC = () => {
               question={m.question}
               answer={m.answer}
               loading={m.loading}
+              streaming={m.streaming}
               error={m.error}
             />
           ))
