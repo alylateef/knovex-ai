@@ -3,6 +3,7 @@ Knovex AI - Main API Router
 Implements Auth, Tenant-isolated Documents, and Chat endpoints.
 """
 
+import asyncio
 from functools import lru_cache
 import logging
 import uuid
