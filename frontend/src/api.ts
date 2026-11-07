@@ -389,9 +389,9 @@ export async function apiAskQuestion(payload: {
       : (rerank ? Math.round(retrievalBase * 0.55) : 0);
 
     const clientPrepTime = metadataMs ?? (retrievalMs + rerankMs);
-    const llmMs         = ttftMs !== null
-      ? Math.max(1, Math.round(ttftMs - clientPrepTime))
-      : Math.max(1, Math.round(totalMs - clientPrepTime));
+    // Accurate model execution measurement:
+    // Total latency minus preprocessing (retrieval + rerank) gives the true model generation duration.
+    const llmMs = Math.max(1, Math.round(totalMs - clientPrepTime));
 
     const rawBlocks = accumulatedText
       ? (accumulatedText.includes('|')

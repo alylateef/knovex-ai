@@ -639,13 +639,16 @@ async def chat_stream(
             if event["type"] == "metadata":
                 all_metadata_citations = event.get("citations", [])
                 yield f"data: {json.dumps(event)}\n\n"
+                await asyncio.sleep(0)
             elif event["type"] == "delta":
                 yield f"data: {json.dumps(event)}\n\n"
+                await asyncio.sleep(0)
             elif event["type"] == "done":
                 final_answer = event.get("answer", "")
                 final_citations = event.get("citations", []) or all_metadata_citations
                 final_evidence = event.get("evidence_status", "sufficient")
                 yield f"data: {json.dumps(event)}\n\n"
+                await asyncio.sleep(0)
 
         # Save assistant message in DB synchronously upon stream completion
         try:
