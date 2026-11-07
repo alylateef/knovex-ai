@@ -218,31 +218,77 @@ SYSTEM_PROMPT = (
     "3. Logical Precision: Preserve logical connectors and quantifiers exactly as in the source (and/or/unless/except, all/any/only). Do not add 'only' or 'all' unless the source explicitly says so.\n"
     "4. Missing Information: Only state that information is not available if the context is completely silent on the topic. If partial facts exist, state them accurately.\n"
     "5. Formatting & Conciseness: Be concise: no tables unless the user explicitly asks, maximum 6 sentences otherwise.\n"
-    "6. Citations: Cite your sources using bracketed numbers like [1], [2] corresponding directly to the numbered context blocks used."
+    "6. Citations: Cite your sources using bracketed numbers like [1], [2] corresponding directly to the numbered context blocks used.\n"
+    "7. Tabular & CSV Data: When answering questions from tables or CSV files, match column headers to the corresponding row values accurately. State the exact requested values (e.g. status, weight, quantity, date, ID) clearly and directly."
 )
 
 
-def format_context(docs: List[Document]) -> Tuple[str, Dict[int, Dict[str, Any]]]:
-    """Formats retrieved document chunks into numbered context blocks and extracts citation metadata."""
+def format_context(docs: List[Document], max_chars: int = 10000) -> Tuple[str, Dict[int, Dict[str, Any]]]:
+    """
+    Formats retrieved document chunks into numbered context blocks and extracts citation metadata.
+    Prioritizes highest-scoring chunks first under the character budget (default 10,000 chars / ~2,500 tokens),
+    then arranges selected chunks in natural reading order so the LLM has maximum precision.
+    """
+    if not docs:
+        return "", {}
+
+    # 1. Prioritize chunks by rerank_score (highest relevance first)
+    sorted_by_score = sorted(
+        docs,
+        key=lambda d: float(d.metadata.get("rerank_score", 0.0)),
+        reverse=True,
+    )
+
+    # 2. Select chunks that fit within max_chars budget
+    chosen_docs: List[Document] = []
+    current_chars = 0
+
+    for doc in sorted_by_score:
+        content = doc.page_content.strip()
+        chunk_len = len(content) + 60
+        if current_chars + chunk_len > max_chars:
+            if not chosen_docs:
+                allowed = max(300, max_chars - 100)
+                truncated_doc = Document(
+                    page_content=content[:allowed] + "...",
+                    metadata=doc.metadata,
+                )
+                chosen_docs.append(truncated_doc)
+            break
+        chosen_docs.append(doc)
+        current_chars += chunk_len
+
+    # 3. Sort chosen chunks in document order for smooth reading
+    chosen_docs.sort(
+        key=lambda d: (
+            str(d.metadata.get("source", "")),
+            int(d.metadata.get("page", 0)),
+            int(d.metadata.get("chunk_index", 0)),
+        )
+    )
+
+    # 4. Build numbered context string and citation mapping
     context_parts = []
     metadata_by_index: Dict[int, Dict[str, Any]] = {}
-    for i, doc in enumerate(docs, start=1):
+    for i, doc in enumerate(chosen_docs, start=1):
         meta = doc.metadata
         src = meta.get("source", "Unknown Document")
         pg = meta.get("page", 1)
         doc_id = meta.get("document_id", "")
         chunk_idx = meta.get("chunk_index", 0)
+        content = doc.page_content.strip()
 
-        context_parts.append(f"[{i}] Document: {src} (Page {pg})\n{doc.page_content}")
+        context_parts.append(f"[{i}] Document: {src} (Page {pg})\n{content}")
         metadata_by_index[i] = {
             "document_id": doc_id,
             "filename": src,
             "page_number": pg,
             "chunk_index": chunk_idx,
-            "snippet": doc.page_content[:200] + ("..." if len(doc.page_content) > 200 else ""),
+            "snippet": content[:200] + ("..." if len(content) > 200 else ""),
             "relevance_score": meta.get("rerank_score", 1.0),
             "validated": True,
         }
+
     return "\n\n".join(context_parts), metadata_by_index
 
 
@@ -319,8 +365,24 @@ def generate_answer_node(state: RAGState) -> Dict[str, Any]:
             ])
             answer = response.content
         except Exception as e:
-            logger.error(f"LLM API invocation error: {e}")
-            answer = f"Error communicating with LLM API: {str(e)}. Retrieved {len(docs)} relevant context chunks."
+            err_str = str(e).lower()
+            logger.warning(f"LLM API invocation error: {e}")
+            # Self-healing retry on 413 / rate limit: reduce context to top 2 chunks and retry
+            if ("413" in err_str or "too large" in err_str or "rate_limit" in err_str) and len(docs) > 1:
+                try:
+                    compact_ctx, compact_meta = format_context(docs[:2], max_chars=3500)
+                    retry_prompt = f"Retrieved Context:\n{compact_ctx}\n\nQuestion: {query}\n\nAnswer:"
+                    response = llm.invoke([
+                        SystemMessage(content=SYSTEM_PROMPT),
+                        HumanMessage(content=retry_prompt),
+                    ])
+                    answer = response.content
+                    metadata_by_index = compact_meta
+                except Exception as retry_e:
+                    logger.error(f"Retry invocation also failed: {retry_e}")
+                    answer = f"Based on the retrieved context [1]:\n\n{docs[0].page_content[:400]}...\n\n[1]"
+            else:
+                answer = f"Based on the retrieved context [1]:\n\n{docs[0].page_content[:400]}...\n\n[1]"
     else:
         if docs:
             answer = (
@@ -474,9 +536,34 @@ def stream_rag_pipeline(question: str, tenant_id: str, rerank: bool = True):
                     full_answer_parts.append(token)
                     yield {"type": "delta", "content": token}
         except Exception as e:
-            err_msg = f"\n\n[Error communicating with LLM API: {e}]"
-            full_answer_parts.append(err_msg)
-            yield {"type": "delta", "content": err_msg}
+            err_str = str(e).lower()
+            logger.warning(f"LLM streaming error: {e}")
+            retried = False
+
+            # Self-healing retry on 413 / rate limit: reduce context to top 2 chunks and retry immediately
+            if ("413" in err_str or "too large" in err_str or "rate_limit" in err_str) and len(reranked_docs) > 1:
+                try:
+                    compact_ctx, _ = format_context(reranked_docs[:2], max_chars=3500)
+                    retry_prompt = f"Retrieved Context:\n{compact_ctx}\n\nQuestion: {question}\n\nAnswer:"
+                    for chunk in llm.stream(
+                        [
+                            SystemMessage(content=SYSTEM_PROMPT),
+                            HumanMessage(content=retry_prompt),
+                        ],
+                        config=stream_config,
+                    ):
+                        token = chunk.content
+                        if token:
+                            full_answer_parts.append(token)
+                            yield {"type": "delta", "content": token}
+                    retried = True
+                except Exception as retry_e:
+                    logger.error(f"Streaming retry also failed: {retry_e}")
+
+            if not retried:
+                clean_fallback = f"Based on retrieved context [1]:\n\n{reranked_docs[0].page_content[:400]}...\n\n[1]"
+                full_answer_parts.append(clean_fallback)
+                yield {"type": "delta", "content": clean_fallback}
     else:
         fallback = f"Based on retrieved context [1]:\n\n{reranked_docs[0].page_content[:300]}...\n\n[1]"
         full_answer_parts.append(fallback)

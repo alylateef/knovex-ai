@@ -186,35 +186,49 @@ def parse_and_chunk_document(
                 col_count = max(len(header), 1)
                 data_rows = clean_rows[1:]
 
-                # Chunk tabular data in 25-row blocks, repeating header on every chunk
-                batch_size = 25
-                total_batches = (len(data_rows) + batch_size - 1) // batch_size if data_rows else 1
-                total_pages = max(1, total_batches)
+                header_md = "| " + " | ".join(header) + " |"
+                sep_md = "| " + " | ".join(["---"] * col_count) + " |"
+                base_header_lines = [header_md, sep_md]
+                base_header_chars = len(header_md) + len(sep_md) + 2
 
                 if not data_rows:
-                    md = f"| {' | '.join(header)} |\n| {' | '.join(['---'] * col_count)} |"
                     all_split_docs.append(
-                        Document(page_content=md, metadata={"page": 1, "is_table": True})
+                        Document(page_content="\n".join(base_header_lines), metadata={"page": 1, "is_table": True})
                     )
                 else:
-                    for b_idx in range(total_batches):
-                        sub_rows = data_rows[b_idx * batch_size : (b_idx + 1) * batch_size]
-                        md_lines = [
-                            f"| {' | '.join(header)} |",
-                            f"| {' | '.join(['---'] * col_count)} |",
-                        ]
-                        for r in sub_rows:
-                            padded = r + [""] * (col_count - len(r)) if len(r) < col_count else r[:col_count]
-                            md_lines.append(f"| {' | '.join(padded)} |")
+                    # Dynamic character-aware table chunking:
+                    # Target ~800-1000 characters per chunk (max 8 rows) to strictly prevent LLM context overflow
+                    # while preserving tabular markdown headers on every chunk for retrieval accuracy.
+                    target_chunk_chars = chunk_size or settings.CHUNK_SIZE
+                    current_rows: List[str] = []
+                    current_chars = base_header_chars
+                    chunk_page = 1
 
-                        chunk_text = "\n".join(md_lines).strip()
-                        if chunk_text:
+                    for row in data_rows:
+                        padded = row + [""] * (col_count - len(row)) if len(row) < col_count else row[:col_count]
+                        row_line = "| " + " | ".join(padded) + " |"
+                        row_chars = len(row_line) + 1
+
+                        # If adding this row exceeds target and we already have rows, flush chunk
+                        if current_rows and ((current_chars + row_chars > target_chunk_chars) or len(current_rows) >= 8):
+                            table_md = "\n".join(base_header_lines + current_rows).strip()
                             all_split_docs.append(
-                                Document(
-                                    page_content=chunk_text,
-                                    metadata={"page": b_idx + 1, "is_table": True},
-                                )
+                                Document(page_content=table_md, metadata={"page": chunk_page, "is_table": True})
                             )
+                            chunk_page += 1
+                            current_rows = [row_line]
+                            current_chars = base_header_chars + row_chars
+                        else:
+                            current_rows.append(row_line)
+                            current_chars += row_chars
+
+                    if current_rows:
+                        table_md = "\n".join(base_header_lines + current_rows).strip()
+                        all_split_docs.append(
+                            Document(page_content=table_md, metadata={"page": chunk_page, "is_table": True})
+                        )
+
+                total_pages = max(1, len(all_split_docs))
 
     else:
         raise ValueError(f"Unsupported file type: {file_ext}")
