@@ -9,8 +9,20 @@ from knovex.config import get_settings
 
 settings = get_settings()
 
-ALLOWED_EXTENSIONS = {".pdf", ".txt"}
-ALLOWED_MIME_TYPES = {"application/pdf", "text/plain", "application/octet-stream"}
+ALLOWED_EXTENSIONS = {".pdf", ".txt", ".md", ".docx", ".csv"}
+ALLOWED_MIME_TYPES = {
+    "application/pdf",
+    "text/plain",
+    "text/markdown",
+    "text/x-markdown",
+    "text/csv",
+    "application/csv",
+    "text/x-csv",
+    "text/comma-separated-values",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/msword",
+    "application/octet-stream",
+}
 
 
 def sanitize_filename(filename: str) -> str:
@@ -44,11 +56,11 @@ async def save_uploaded_file(tenant_id: str, file: UploadFile) -> Tuple[Path, st
     if file_ext not in ALLOWED_EXTENSIONS:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Unsupported file extension '{file_ext}'. Allowed types: PDF (.pdf), Text (.txt)"
+            detail=f"Unsupported file extension '{file_ext}'. Allowed types: PDF (.pdf), Word (.docx), CSV (.csv), Text (.txt, .md)"
         )
 
     mime_type = file.content_type or "application/octet-stream"
-    if mime_type not in ALLOWED_MIME_TYPES and not file_ext in {".txt", ".pdf"}:
+    if mime_type not in ALLOWED_MIME_TYPES and file_ext not in ALLOWED_EXTENSIONS:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Invalid MIME type '{mime_type}' for document upload"

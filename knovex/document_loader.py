@@ -101,6 +101,113 @@ def parse_and_chunk_document(
         total_pages = 1
         all_split_docs = text_splitter.split_documents(raw_docs)
 
+    elif file_ext == ".docx":
+        import docx
+
+        doc = docx.Document(str(file_path))
+        total_pages = 1
+
+        # Sequential extraction: iterate through document body elements in order
+        for child in doc.element.body.iterchildren():
+            if child.tag.endswith("p"):
+                # Extract paragraph text
+                text = "".join(node.text for node in child.iter() if node.tag.endswith("t") and node.text).strip()
+                if text:
+                    p_chunks = text_splitter.split_documents([
+                        Document(page_content=text, metadata={"page": 1})
+                    ])
+                    all_split_docs.extend(p_chunks)
+
+            elif child.tag.endswith("tbl"):
+                # Extract table as structured Markdown
+                from docx.table import Table
+
+                t = Table(child, doc)
+                rows_data = []
+                for row in t.rows:
+                    row_cells = [cell.text.replace("\n", " ").replace("|", "/").strip() for cell in row.cells]
+                    rows_data.append(row_cells)
+
+                if rows_data:
+                    header = rows_data[0]
+                    col_count = max(len(header), 1)
+                    md_lines = [
+                        "| " + " | ".join(header) + " |",
+                        "| " + " | ".join(["---"] * col_count) + " |",
+                    ]
+                    for r in rows_data[1:]:
+                        padded = r + [""] * (col_count - len(r)) if len(r) < col_count else r[:col_count]
+                        md_lines.append("| " + " | ".join(padded) + " |")
+
+                    table_md = "\n".join(md_lines).strip()
+                    if table_md:
+                        all_split_docs.append(
+                            Document(page_content=table_md, metadata={"page": 1, "is_table": True})
+                        )
+
+    elif file_ext == ".csv":
+        import csv
+        import io
+
+        total_pages = 1
+
+        # Safe encoding detection (Excel utf-8-sig BOM, utf-8, latin-1)
+        raw_text = None
+        for enc in ("utf-8-sig", "utf-8", "latin-1"):
+            try:
+                with open(file_path, "r", encoding=enc) as f:
+                    raw_text = f.read()
+                break
+            except (UnicodeDecodeError, LookupError):
+                continue
+
+        if not raw_text:
+            raise ValueError("Could not decode CSV file content.")
+
+        reader = csv.reader(io.StringIO(raw_text))
+        rows = list(reader)
+
+        if rows:
+            clean_rows = [
+                [cell.replace("\n", " ").replace("|", "/").strip() for cell in row]
+                for row in rows
+                if any(cell.strip() for cell in row)
+            ]
+            if clean_rows:
+                header = clean_rows[0]
+                col_count = max(len(header), 1)
+                data_rows = clean_rows[1:]
+
+                # Chunk tabular data in 25-row blocks, repeating header on every chunk
+                batch_size = 25
+                total_batches = (len(data_rows) + batch_size - 1) // batch_size if data_rows else 1
+                total_pages = max(1, total_batches)
+
+                if not data_rows:
+                    md = f"| {' | '.join(header)} |\n| {' | '.join(['---'] * col_count)} |"
+                    all_split_docs.append(
+                        Document(page_content=md, metadata={"page": 1, "is_table": True})
+                    )
+                else:
+                    for b_idx in range(total_batches):
+                        sub_rows = data_rows[b_idx * batch_size : (b_idx + 1) * batch_size]
+                        md_lines = [
+                            f"| {' | '.join(header)} |",
+                            f"| {' | '.join(['---'] * col_count)} |",
+                        ]
+                        for r in sub_rows:
+                            padded = r + [""] * (col_count - len(r)) if len(r) < col_count else r[:col_count]
+                            md_lines.append(f"| {' | '.join(padded)} |")
+
+                        chunk_text = "\n".join(md_lines).strip()
+                        if chunk_text:
+                            all_split_docs.append(
+                                Document(
+                                    page_content=chunk_text,
+                                    metadata={"page": b_idx + 1, "is_table": True},
+                                )
+                            )
+
     else:
         raise ValueError(f"Unsupported file type: {file_ext}")
 

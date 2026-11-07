@@ -37,7 +37,7 @@ export const UploadDropzone: React.FC = () => {
         type="file"
         ref={fileInputRef}
         onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
-        accept=".pdf,.txt"
+        accept=".pdf,.txt,.docx,.csv"
         className="sr-only"
         id="file-upload-input"
         disabled={isUploading}
@@ -52,7 +52,7 @@ export const UploadDropzone: React.FC = () => {
           className={`mb-1.5 transition-colors ${isDragging ? 'text-mark' : 'text-secondary'}`}
         />
         <span className={`text-xs font-sans font-medium transition-colors ${isDragging ? 'text-mark' : 'text-ink'}`}>
-          {isUploading ? 'Uploading…' : 'Drop PDF or TXT'}
+          {isUploading ? 'Uploading…' : 'Drop PDF, DOCX, CSV, or TXT'}
         </span>
         {!isUploading && (
           <span className="text-xs font-mono text-muted mt-0.5">

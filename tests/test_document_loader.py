@@ -98,3 +98,72 @@ def test_pdf_table_detection_and_chunking():
     finally:
         if temp_path.exists():
             temp_path.unlink()
+
+
+def test_docx_parsing_and_table_preservation():
+    import docx
+
+    doc = docx.Document()
+    doc.add_paragraph("Knovex Executive Summary for Word Documents.")
+
+    # Add a table
+    table = doc.add_table(rows=2, cols=2)
+    table.rows[0].cells[0].text = "Metric"
+    table.rows[0].cells[1].text = "Value"
+    table.rows[1].cells[0].text = "Uptime"
+    table.rows[1].cells[1].text = "99.9%"
+
+    doc.add_paragraph("Concluding remarks on enterprise reliability.")
+
+    temp_path = Path(tempfile.gettempdir()) / "test_doc.docx"
+    doc.save(str(temp_path))
+
+    try:
+        chunks = parse_and_chunk_document(
+            file_path=temp_path,
+            document_id="doc-docx-test",
+            tenant_id="tenant-xyz",
+        )
+
+        assert len(chunks) >= 2
+        # Verify table chunk
+        table_chunks = [c for c in chunks if c.metadata.get("is_table")]
+        assert len(table_chunks) >= 1
+        assert "| Metric | Value |" in table_chunks[0].page_content
+        assert "| Uptime | 99.9% |" in table_chunks[0].page_content
+
+        # Verify prose chunk
+        prose_chunks = [c for c in chunks if not c.metadata.get("is_table")]
+        assert any("Knovex Executive Summary" in c.page_content for c in prose_chunks)
+    finally:
+        if temp_path.exists():
+            temp_path.unlink()
+
+
+def test_csv_parsing_and_header_preservation():
+    csv_content = (
+        "Name,Role,Department,Salary\n"
+        "Alice Smith,Engineer,R&D,120000\n"
+        "Bob Jones,Analyst,Finance,95000\n"
+        "Carol White,Manager,Sales,110000\n"
+    )
+
+    temp_path = Path(tempfile.gettempdir()) / "test_data.csv"
+    temp_path.write_text(csv_content, encoding="utf-8")
+
+    try:
+        chunks = parse_and_chunk_document(
+            file_path=temp_path,
+            document_id="doc-csv-test",
+            tenant_id="tenant-xyz",
+        )
+
+        assert len(chunks) >= 1
+        c = chunks[0]
+        assert c.metadata.get("is_table") is True
+        assert "| Name | Role | Department | Salary |" in c.page_content
+        assert "| Alice Smith | Engineer | R&D | 120000 |" in c.page_content
+        assert "| Bob Jones | Analyst | Finance | 95000 |" in c.page_content
+    finally:
+        if temp_path.exists():
+            temp_path.unlink()

@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
+import { Moon, Sun } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore.ts';
+import { useUIStore } from '../../stores/uiStore.ts';
 
 /* ------------------------------------------------------------------ */
 /* Knovex Auth — Enterprise Multi-Tenant Screen                        */
@@ -25,6 +27,7 @@ export const AuthScreen: React.FC = () => {
   const [fullName, setFullName] = useState('');
 
   const { login, register, join, isLoading, error, clearError } = useAuthStore();
+  const { theme, toggleTheme } = useUIStore();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,7 +49,24 @@ export const AuthScreen: React.FC = () => {
   const labelCls = 'block text-xs font-mono text-secondary mb-1 uppercase tracking-wider font-medium';
 
   return (
-    <div className="w-full h-full min-h-screen md:min-h-0 flex flex-col md:flex-row bg-bg text-ink overflow-y-auto md:overflow-hidden">
+    <div className="relative w-full h-full min-h-screen md:min-h-0 flex flex-col md:flex-row bg-bg text-ink overflow-y-auto md:overflow-hidden">
+
+      {/* ── Theme toggle (Top Right) ── */}
+      <div className="absolute top-4 right-4 z-20">
+        <button
+          type="button"
+          onClick={toggleTheme}
+          title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          aria-label="Toggle Theme"
+          className="p-1.5 text-secondary hover:text-ink hover:bg-elevated rounded-button border border-line bg-surface/80 backdrop-blur-xs transition-colors cursor-pointer shadow-xs"
+        >
+          {theme === 'dark' ? (
+            <Sun size={15} strokeWidth={1.5} />
+          ) : (
+            <Moon size={15} strokeWidth={1.5} />
+          )}
+        </button>
+      </div>
 
       {/* ── Left: Brand manifesto (Desktop only) ── */}
       <div className="hidden md:flex md:w-1/2 p-7 md:p-8 flex-col justify-between border-r border-line bg-sidebar shrink-0">

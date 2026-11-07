@@ -22,7 +22,7 @@ export const DocumentsList: React.FC = () => {
   if (docs.length === 0) {
     return (
       <div className="text-xs font-mono text-secondary py-3">
-        {isAdmin ? 'No documents yet. Drop a PDF or TXT to start.' : 'No documents uploaded yet.'}
+        {isAdmin ? 'No documents yet. Drop PDF, DOCX, CSV, or TXT to start.' : 'No documents uploaded yet.'}
       </div>
     );
   }
