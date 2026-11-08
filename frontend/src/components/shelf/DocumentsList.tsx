@@ -28,7 +28,7 @@ export const DocumentsList: React.FC = () => {
   }
 
   return (
-    <ul className="space-y-2 overflow-y-auto max-h-56">
+    <ul className="space-y-2">
       {docs.map((doc: DocItem) => {
         const isProcessing = doc.status === 'PENDING' || doc.status === 'PROCESSING';
         const isFailed = doc.status === 'FAILED';

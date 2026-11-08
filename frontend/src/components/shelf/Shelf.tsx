@@ -91,8 +91,8 @@ export const Shelf: React.FC = () => {
           </div>
         </div>
 
-      {/* ── Scrollable middle ── */}
-      <div className="flex-1 overflow-y-auto">
+      {/* ── Scrollable middle: threads only ── */}
+      <div className="flex-1 min-h-0 overflow-y-auto">
 
         {/* ── Threads ── */}
         <div className="pt-3 pb-2">
@@ -114,11 +114,13 @@ export const Shelf: React.FC = () => {
           <ThreadList />
         </div>
 
-        {/* ── Divider ── */}
-        <div className="h-px bg-line mx-4 my-1" />
+      </div>
+
+      {/* ── Pinned bottom section: Documents + Upload + Footer ── */}
+      <div className="shrink-0 border-t border-line">
 
         {/* ── Documents ── */}
-        <div className="pt-3 pb-4 px-4">
+        <div className="pt-3 pb-2 px-4">
           <div className="text-xs font-mono text-secondary uppercase tracking-wider font-medium mb-2">
             Documents
           </div>
@@ -127,7 +129,7 @@ export const Shelf: React.FC = () => {
 
         {/* ── Upload (Admin only) ── */}
         {user?.role === 'admin' && (
-          <div className="px-4 pb-4">
+          <div className="px-4 pb-3">
             <UploadDropzone />
           </div>
         )}
