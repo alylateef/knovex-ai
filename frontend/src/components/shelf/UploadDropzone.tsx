@@ -66,16 +66,30 @@ export const UploadDropzone: React.FC = () => {
         <input
           type="file"
           ref={fileInputRef}
-          onChange={(e) => e.target.files && handleFiles(e.target.files)}
+          onChange={(e) => {
+            if (e.target.files) handleFiles(e.target.files);
+            e.target.blur();
+          }}
           accept=".pdf,.txt,.md,.docx,.doc,.csv"
           multiple
-          className="sr-only"
-          id="file-upload-input"
+          className="hidden"
           disabled={isUploading}
+          tabIndex={-1}
         />
-        <label
-          htmlFor="file-upload-input"
-          className="cursor-pointer flex flex-col items-center justify-center py-3 px-2"
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={(e) => {
+            e.preventDefault();
+            if (!isUploading) fileInputRef.current?.click();
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              if (!isUploading) fileInputRef.current?.click();
+            }
+          }}
+          className="cursor-pointer flex flex-col items-center justify-center py-3 px-2 select-none"
         >
           <Upload
             size={15}
@@ -90,7 +104,7 @@ export const UploadDropzone: React.FC = () => {
               or click to browse
             </span>
           )}
-        </label>
+        </div>
       </div>
 
       {error && (
