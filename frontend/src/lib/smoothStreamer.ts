@@ -1,7 +1,7 @@
 /**
  * SmoothStreamer — 60 FPS Fluid Token Dispatcher
  * Buffers incoming network token bursts from SSE and dispatches them at a
- * steady, buttery-smooth rate synchronized with requestAnimationFrame.
+ * steady, buttery-smooth human-readable rate synchronized with requestAnimationFrame.
  */
 export class SmoothStreamer {
   private targetText = '';
@@ -25,10 +25,23 @@ export class SmoothStreamer {
   private tick = () => {
     if (this.currentText.length < this.targetText.length) {
       const remaining = this.targetText.length - this.currentText.length;
-      // Adaptive velocity:
-      // Small buffer: 1-2 characters per frame (silky typing)
-      // Large burst from LLM: smoothly accelerates so it never falls behind
-      const step = Math.max(1, Math.min(remaining, Math.ceil(remaining / 3)));
+
+      // Silky, human-readable typing velocity:
+      // Delivers 1-3 characters per 16ms frame (~60-180 chars/sec).
+      // Words flow naturally across the screen without sudden block jumps.
+      let step: number;
+      if (this.isDone) {
+        step = Math.max(2, Math.ceil(remaining / 6));
+      } else if (remaining > 100) {
+        step = Math.ceil(remaining / 14);
+      } else if (remaining > 50) {
+        step = 4;
+      } else if (remaining > 20) {
+        step = 2;
+      } else {
+        step = 1;
+      }
+
       this.currentText = this.targetText.slice(0, this.currentText.length + step);
       this.onUpdate(this.currentText);
     }

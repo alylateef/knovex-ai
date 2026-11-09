@@ -16,10 +16,23 @@ export const ClaimSentenceView: React.FC<ClaimSentenceViewProps> = ({
   sentence,
   chunks,
   chunkNumberMap,
-  isStreaming: _isStreaming,
+  isStreaming = false,
 }) => {
   const { activeNumber, selectCitation } = useCitationStore();
   const { setInspectorOpen } = useUIStore();
+
+  // High-performance 60 FPS streaming mode: zero markdown AST thrashing, inline blinking cursor
+  if (isStreaming) {
+    return (
+      <div className="text-ink mb-2 whitespace-pre-wrap leading-relaxed font-sans text-base">
+        {sentence.text}
+        <span
+          className="inline-block w-1.5 h-4 ml-1 bg-mark align-middle rounded-xs"
+          style={{ animation: 'kx-glow 0.8s ease-in-out infinite' }}
+        />
+      </div>
+    );
+  }
 
   const markdownComponents = {
     p: ({ children }: { children?: React.ReactNode }) => <div className="mb-2 leading-relaxed">{children}</div>,
