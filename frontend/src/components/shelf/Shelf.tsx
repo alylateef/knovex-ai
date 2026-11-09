@@ -62,7 +62,7 @@ export const Shelf: React.FC = () => {
         className={`
           fixed md:static inset-y-0 left-0 z-50
           w-72 md:w-shelf shrink-0
-          border-r border-line bg-sidebar flex flex-col h-full max-h-screen md:max-h-full overflow-hidden
+          border-r border-line bg-sidebar flex flex-col h-screen overflow-hidden
           transition-transform duration-200 ease-in-out
           ${sidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full md:translate-x-0'}
         `}
@@ -135,7 +135,7 @@ export const Shelf: React.FC = () => {
         </div>
 
         {/* ── User footer (Fixed at Bottom) ── */}
-        <div className="px-4 py-3 border-t border-line shrink-0 bg-sidebar mt-auto flex items-center justify-between">
+        <div className="px-4 py-3 border-t border-line shrink-0 bg-sidebar flex items-center justify-between">
           <div className="min-w-0 pr-2">
             <div className="flex items-center gap-1.5">
               <span
