@@ -183,14 +183,16 @@ def rerank_node(state: RAGState) -> Dict[str, Any]:
             scores = encoder.predict(pairs, show_progress_bar=False)
             logger.info(f"CrossEncoder scored {len(pairs)} pairs in {time.perf_counter()-t0:.2f}s")
 
-            # Sigmoid-normalise raw CrossEncoder logits to [0, 1] range
-            import math
-            def sigmoid(x: float) -> float:
-                return 1.0 / (1.0 + math.exp(-x))
+            # Min-max normalise scores to [0, 1] within this batch.
+            # CrossEncoder ms-marco logits are extreme (-10 to +10), sigmoid maps
+            # them all to ~0 or ~1. Min-max keeps the relative spread meaningful.
+            raw = [float(s) for s in scores]
+            lo, hi = min(raw), max(raw)
+            span = hi - lo if hi - lo > 1e-6 else 1.0
 
-            doc_scores = sorted(zip(docs, scores), key=lambda x: x[1], reverse=True)
+            doc_scores = sorted(zip(docs, raw), key=lambda x: x[1], reverse=True)
             for doc, score in doc_scores:
-                doc.metadata["rerank_score"] = round(sigmoid(float(score)), 4)
+                doc.metadata["rerank_score"] = round((score - lo) / span, 4)
                 top_docs.append(doc)
         except Exception as e:
             logger.warning(f"Reranking failed or skipped: {e}")
