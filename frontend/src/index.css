@@ -75,6 +75,31 @@ html, body, #root {
   height: 0px;
 }
 
+/* Custom sleek scrollbar for sidebar & panels */
+.custom-scrollbar {
+  scrollbar-width: thin !important;
+  scrollbar-color: var(--color-line) transparent !important;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  display: block !important;
+  width: 5px !important;
+  height: 5px !important;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--color-line) !important;
+  border-radius: 9999px !important;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--color-secondary) !important;
+}
+
 /* =========================================================
    PATTERNS
    ========================================================= */

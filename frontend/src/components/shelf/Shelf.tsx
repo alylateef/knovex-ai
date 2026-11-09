@@ -62,13 +62,13 @@ export const Shelf: React.FC = () => {
         className={`
           fixed md:static inset-y-0 left-0 z-50
           w-72 md:w-shelf shrink-0
-          border-r border-line bg-sidebar flex flex-col h-full overflow-hidden
+          border-r border-line bg-sidebar flex flex-col h-full max-h-screen md:max-h-full overflow-hidden
           transition-transform duration-200 ease-in-out
           ${sidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full md:translate-x-0'}
         `}
       >
 
-        {/* ── Brand header ── */}
+        {/* ── Brand header (Fixed at Top) ── */}
         <div className="px-4 pt-4 pb-3 border-b border-line shrink-0">
           <div className="flex items-center justify-between">
             <KnovexWordmark />
@@ -91,87 +91,85 @@ export const Shelf: React.FC = () => {
           </div>
         </div>
 
-      {/* ── Scrollable middle: threads only ── */}
-      <div className="flex-1 min-h-0 overflow-y-auto">
+        {/* ── Scrollable middle: Threads + Documents + Upload ── */}
+        <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
 
-        {/* ── Threads ── */}
-        <div className="pt-3 pb-2">
-          <div className="flex items-center justify-between px-4 mb-2">
-            <span className="text-xs font-mono text-secondary uppercase tracking-wider font-medium">
-              Threads
-            </span>
-            <button
-              type="button"
-              onClick={handleNewThread}
-              title="Start new thread"
-              aria-label="New thread"
-              className="flex items-center space-x-1 text-xs font-mono text-secondary hover:text-mark hover:bg-elevated px-1.5 py-0.5 rounded-chip transition-colors"
-            >
-              <Plus size={13} strokeWidth={2} />
-              <span>New</span>
-            </button>
+          {/* ── Threads ── */}
+          <div className="pt-3 pb-2">
+            <div className="flex items-center justify-between px-4 mb-2">
+              <span className="text-xs font-mono text-secondary uppercase tracking-wider font-medium">
+                Threads
+              </span>
+              <button
+                type="button"
+                onClick={handleNewThread}
+                title="Start new thread"
+                aria-label="New thread"
+                className="flex items-center space-x-1 text-xs font-mono text-secondary hover:text-mark hover:bg-elevated px-1.5 py-0.5 rounded-chip transition-colors cursor-pointer"
+              >
+                <Plus size={13} strokeWidth={2} />
+                <span>New</span>
+              </button>
+            </div>
+            <ThreadList />
           </div>
-          <ThreadList />
-        </div>
 
-      </div>
+          {/* ── Divider ── */}
+          <div className="h-px bg-line mx-4 my-2" />
 
-      {/* ── Pinned bottom section: Documents + Upload + Footer ── */}
-      <div className="shrink-0 border-t border-line">
-
-        {/* ── Documents ── */}
-        <div className="pt-3 pb-2 px-4">
-          <div className="text-xs font-mono text-secondary uppercase tracking-wider font-medium mb-2">
-            Documents
+          {/* ── Documents ── */}
+          <div className="pt-1 pb-4 px-4">
+            <div className="text-xs font-mono text-secondary uppercase tracking-wider font-medium mb-2">
+              Documents
+            </div>
+            <DocumentsList />
           </div>
-          <DocumentsList />
-        </div>
 
-        {/* ── Upload (Admin only) ── */}
-        {user?.role === 'admin' && (
-          <div className="px-4 pb-3">
-            <UploadDropzone />
-          </div>
-        )}
-
-      </div>
-
-      {/* ── User footer ── */}
-      <div className="px-4 py-3 border-t border-line shrink-0 flex items-center justify-between">
-        <div className="min-w-0 pr-2">
-          <div className="flex items-center gap-1.5">
-            <span
-              className="text-xs font-sans font-semibold text-ink truncate"
-              title={user?.email}
-            >
-              {user?.email}
-            </span>
-            <span
-              className={`text-[10px] font-mono px-1.5 py-0.2 rounded border uppercase font-medium shrink-0 ${
-                user?.role === 'admin'
-                  ? 'border-mark/40 text-mark bg-mark/10'
-                  : 'border-line text-muted bg-surface'
-              }`}
-            >
-              {user?.role || 'user'}
-            </span>
-          </div>
-          {user?.org_code && (
-            <div className="text-[10px] font-mono text-muted flex items-center gap-1 mt-0.5" title="Share this code with teammates to join your workspace">
-              <span>Code:</span>
-              <span className="font-semibold text-secondary select-all">{user.org_code}</span>
+          {/* ── Upload (Admin only) ── */}
+          {user?.role === 'admin' && (
+            <div className="px-4 pb-4">
+              <UploadDropzone />
             </div>
           )}
+
         </div>
-        <button
-          type="button"
-          onClick={() => logout()}
-          className="text-xs font-mono text-muted hover:text-danger transition-colors shrink-0 cursor-pointer"
-        >
-          Sign out
-        </button>
-      </div>
-    </aside>
+
+        {/* ── User footer (Fixed at Bottom) ── */}
+        <div className="px-4 py-3 border-t border-line shrink-0 bg-sidebar mt-auto flex items-center justify-between">
+          <div className="min-w-0 pr-2">
+            <div className="flex items-center gap-1.5">
+              <span
+                className="text-xs font-sans font-semibold text-ink truncate"
+                title={user?.email}
+              >
+                {user?.email}
+              </span>
+              <span
+                className={`text-[10px] font-mono px-1.5 py-0.2 rounded border uppercase font-medium shrink-0 ${
+                  user?.role === 'admin'
+                    ? 'border-mark/40 text-mark bg-mark/10'
+                    : 'border-line text-muted bg-surface'
+                }`}
+              >
+                {user?.role || 'user'}
+              </span>
+            </div>
+            {user?.org_code && (
+              <div className="text-[10px] font-mono text-muted flex items-center gap-1 mt-0.5" title="Share this code with teammates to join your workspace">
+                <span>Code:</span>
+                <span className="font-semibold text-secondary select-all">{user.org_code}</span>
+              </div>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => logout()}
+            className="text-xs font-mono text-muted hover:text-danger transition-colors shrink-0 cursor-pointer"
+          >
+            Sign out
+          </button>
+        </div>
+      </aside>
   </>
   );
 };
