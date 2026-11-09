@@ -25,18 +25,14 @@ export const useChatStore = create<ChatState>((set) => ({
       created_at: new Date().toISOString(),
     };
 
-    // If no active thread yet, we'll let the backend create one
-    // Append optimistic message to active thread (or a temporary "pending" thread id)
-    const pendingThreadId = activeThreadId ?? '__pending__';
-    threadsStore.appendMessage(pendingThreadId, optimisticMsg);
+    const targetThreadId = activeThreadId ?? '__pending__';
+    threadsStore.appendMessage(targetThreadId, optimisticMsg);
 
     set({ isSubmitting: true });
 
-    let receivedConvId = activeThreadId;
     let chunksMap: Record<string, any> = {};
 
     const streamer = new SmoothStreamer((smoothText) => {
-      const targetThreadId = receivedConvId ?? pendingThreadId;
       threadsStore.updateMessage(targetThreadId, tempId, {
         loading: false,
         streaming: true,
@@ -55,8 +51,7 @@ export const useChatStore = create<ChatState>((set) => ({
         top_k: topK,
         mode,
         conversation_id: activeThreadId ?? undefined,
-        onMetadata: (chunks, convId) => {
-          if (convId) receivedConvId = convId;
+        onMetadata: (chunks) => {
           chunksMap = chunks;
         },
         onDelta: (_delta, accumulated) => {
@@ -114,9 +109,7 @@ export const useChatStore = create<ChatState>((set) => ({
       streamer.stop();
       const errMsg = err instanceof Error ? err.message : 'Failed to query documents';
 
-      const currentActive = useThreadsStore.getState().activeThreadId;
-      const targetThread = currentActive ?? '__pending__';
-      useThreadsStore.getState().updateMessage(targetThread, tempId, {
+      useThreadsStore.getState().updateMessage(targetThreadId, tempId, {
         error: errMsg,
         loading: false,
         streaming: false,
