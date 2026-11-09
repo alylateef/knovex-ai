@@ -352,7 +352,7 @@ export async function apiAskQuestion(payload: {
                 page: c.page_number || 1,
                 char_count: (c.snippet || '').length,
                 text: c.snippet || '',
-                scores: { rerank: c.relevance_score || 1.0 },
+                scores: { rerank: c.relevance_score ?? 1.0 },
               };
             });
             payload.onMetadata?.(chunks, serverConvId);
