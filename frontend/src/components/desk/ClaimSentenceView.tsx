@@ -18,7 +18,7 @@ export const ClaimSentenceView: React.FC<ClaimSentenceViewProps> = ({
   chunkNumberMap,
   isStreaming = false,
 }) => {
-  const { activeNumber, selectCitation } = useCitationStore();
+  const { activeChunk, selectCitation } = useCitationStore();
   const { setInspectorOpen } = useUIStore();
 
   // High-performance 60 FPS streaming mode: zero markdown AST thrashing, inline blinking cursor
@@ -128,7 +128,9 @@ export const ClaimSentenceView: React.FC<ClaimSentenceViewProps> = ({
             if (!chunk) return null;
 
             const num = chunkNumberMap.get(chunkId) ?? 1;
-            const isActive = activeNumber === num;
+            // Compare by unique chunk ID, not by display number.
+            // This prevents citation [5] in one answer highlighting [5] in another.
+            const isActive = activeChunk?.id === chunkId;
 
             return (
               <button
