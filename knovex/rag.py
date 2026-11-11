@@ -522,6 +522,7 @@ def stream_rag_pipeline(question: str, tenant_id: str, rerank: bool = True):
     user_prompt = f"Retrieved Context:\n{context_str}\n\nQuestion: {question}\n\nAnswer:"
     llm = get_chat_llm()
 
+    t_llm_start = time.perf_counter()
     full_answer_parts = []
     if llm is not None:
         try:
@@ -578,11 +579,21 @@ def stream_rag_pipeline(question: str, tenant_id: str, rerank: bool = True):
 
     full_answer = "".join(full_answer_parts)
     citations = list(metadata_by_index.values())
+    llm_ms = max(10, int((time.perf_counter() - t_llm_start) * 1000))
+
+    complete_timings = {
+        "retrieval_ms": retrieval_ms,
+        "rerank_ms": rerank_ms,
+        "llm_ms": llm_ms,
+    }
+    for cit in citations:
+        cit["server_timings"] = complete_timings
 
     yield {
         "type": "done",
         "answer": full_answer,
         "citations": citations,
         "evidence_status": "sufficient",
+        "server_timings": complete_timings,
     }
 
