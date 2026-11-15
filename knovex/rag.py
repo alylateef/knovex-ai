@@ -499,15 +499,30 @@ def stream_rag_pipeline(question: str, tenant_id: str, rerank: bool = True):
     evidence_status = evidence_res.get("evidence_status", "insufficient")
 
     if evidence_status != "sufficient" or not reranked_docs:
-        decline_res = decline_to_answer_node({})
+        # Check if the tenant actually has any indexed documents in the workspace
+        has_any_docs = False
+        try:
+            from knovex.database import get_sync_db_context
+            from knovex.models import Document as DocModel
+            with get_sync_db_context() as sync_db:
+                has_any_docs = sync_db.query(DocModel).filter(DocModel.tenant_id == tenant_id).first() is not None
+        except Exception:
+            has_any_docs = True
+
+        if not has_any_docs:
+            refusal_text = "No documents have been uploaded to this workspace yet. Please upload a PDF, DOCX, CSV, or TXT file from the left sidebar to start asking questions."
+        else:
+            decline_res = decline_to_answer_node({})
+            refusal_text = decline_res["answer"]
+
         yield {
             "type": "metadata",
             "citations": [],
             "evidence_status": "insufficient",
             "server_timings": server_timings,
         }
-        yield {"type": "delta", "content": decline_res["answer"]}
-        yield {"type": "done", "answer": decline_res["answer"], "citations": [], "evidence_status": "insufficient"}
+        yield {"type": "delta", "content": refusal_text}
+        yield {"type": "done", "answer": refusal_text, "citations": [], "evidence_status": "insufficient"}
         return
 
     # 4. Format context blocks and yield initial metadata

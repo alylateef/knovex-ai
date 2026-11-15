@@ -87,6 +87,20 @@ async def save_uploaded_file(tenant_id: str, file: UploadFile) -> Tuple[Path, st
             detail="Invalid file path detected (directory traversal attempt rejected)"
         )
 
+    # Enforce per-tenant total storage limit (250 MB max per workspace) to protect disk
+    try:
+        current_tenant_usage = sum(f.stat().st_size for f in tenant_dir.iterdir() if f.is_file())
+        MAX_WORKSPACE_STORAGE = 250 * 1024 * 1024
+        if current_tenant_usage >= MAX_WORKSPACE_STORAGE:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail="Workspace storage limit reached (250MB maximum). Please delete old documents before uploading new ones."
+            )
+    except HTTPException:
+        raise
+    except Exception:
+        pass
+
     # Stream write, enforce maximum file size, and compute SHA-256
     bytes_written = 0
     hasher = hashlib.sha256()

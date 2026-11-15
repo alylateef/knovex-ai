@@ -112,22 +112,28 @@ async def is_token_revoked(redis_client, token: str) -> bool:
 
 async def check_rate_limit(redis_client, identifier: str, limit: int = 60, window_seconds: int = 60) -> Tuple[bool, int]:
     """
-    Redis-backed sliding window rate limiter.
+    Redis-backed true rolling sliding-window rate limiter using sorted sets (ZSET).
     Returns (is_allowed, remaining_requests).
     """
     if redis_client is None:
         return True, limit
 
     try:
-        current_ts = int(time.time())
-        key = f"ratelimit:{identifier}:{current_ts // window_seconds}"
-        current_count = await redis_client.incr(key)
-        if current_count == 1:
-            await redis_client.expire(key, window_seconds + 5)
+        now = time.time()
+        clear_before = now - window_seconds
+        key = f"ratelimit:{identifier}:zset"
 
-        if current_count > limit:
+        pipe = redis_client.pipeline()
+        pipe.zremrangebyscore(key, "-inf", clear_before)
+        pipe.zcard(key)
+        pipe.zadd(key, {f"{now}": now})
+        pipe.expire(key, window_seconds + 10)
+        results = await pipe.execute()
+
+        current_count = results[1]  # count of requests currently in sliding window
+        if current_count >= limit:
             return False, 0
-        return True, max(0, limit - current_count)
+        return True, max(0, limit - (current_count + 1))
     except Exception:
         # Fail open safely if Redis is down
         return True, limit
