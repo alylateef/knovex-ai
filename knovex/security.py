@@ -76,34 +76,41 @@ def decode_access_token(token: str) -> Optional[TokenData]:
 # ---------------------------------------------------------
 
 async def revoke_token(redis_client, token: str, ttl_seconds: Optional[int] = None) -> None:
-    """Mark a JWT token as revoked in Redis until its natural expiration."""
+    """Mark a JWT token as revoked in Redis using its compact jti claim (not the full token).
+    Using jti keeps Redis keys small (~36 bytes vs ~400 bytes for the full JWT)."""
     if redis_client is None:
         return
     try:
+        unverified = jwt.decode(token, options={"verify_signature": False})
+        jti = unverified.get("jti")
+        if not jti:
+            return  # No jti claim — cannot revoke safely
+
         if ttl_seconds is None:
-            try:
-                unverified = jwt.decode(token, options={"verify_signature": False})
-                exp_ts = unverified.get("exp")
-                if exp_ts:
-                    remaining = int(exp_ts - time.time())
-                    ttl_seconds = max(1, remaining)
-            except Exception:
-                pass
+            exp_ts = unverified.get("exp")
+            if exp_ts:
+                remaining = int(exp_ts - time.time())
+                ttl_seconds = max(1, remaining)
+
         if ttl_seconds is None or ttl_seconds <= 0:
             ttl_seconds = settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
 
-        key = f"revoked_token:{token}"
+        key = f"revoked_jti:{jti}"
         await redis_client.setex(key, ttl_seconds, "1")
     except Exception:
         pass
 
 
 async def is_token_revoked(redis_client, token: str) -> bool:
-    """Check if token is blacklisted in Redis."""
+    """Check if token's jti is blacklisted in Redis."""
     if redis_client is None:
         return False
     try:
-        key = f"revoked_token:{token}"
+        unverified = jwt.decode(token, options={"verify_signature": False})
+        jti = unverified.get("jti")
+        if not jti:
+            return False
+        key = f"revoked_jti:{jti}"
         val = await redis_client.get(key)
         return val is not None
     except Exception:

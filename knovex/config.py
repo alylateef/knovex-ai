@@ -72,6 +72,7 @@ class Settings(BaseSettings):
 
     # Rate Limiting
     RATE_LIMIT_REQUESTS_PER_MINUTE: int = 60
+    RATE_LIMIT_WINDOW_SECONDS: int = 60
 
     # Tracing & Observability (LangSmith)
     LANGCHAIN_TRACING_V2: bool = False
@@ -83,6 +84,20 @@ class Settings(BaseSettings):
 @lru_cache()
 def get_settings() -> Settings:
     settings = Settings()
+
+    # Production safety guard: refuse to start with insecure defaults.
+    # This catches a misconfigured EC2 deploy before it goes live.
+    if settings.APP_ENV == "production":
+        if "knovex-super-secret" in settings.SECRET_KEY or len(settings.SECRET_KEY) < 32:
+            raise RuntimeError(
+                "FATAL: Insecure or default SECRET_KEY detected in production. "
+                "Set a strong random SECRET_KEY in your .env (use: openssl rand -hex 32)."
+            )
+        if settings.DEBUG:
+            raise RuntimeError(
+                "FATAL: DEBUG=True is not allowed in production. Set DEBUG=false in .env."
+            )
+
     # Synchronize LangSmith configuration to os.environ for LangChain/LangGraph runtime
     if settings.LANGCHAIN_TRACING_V2 and settings.LANGCHAIN_API_KEY:
         import os

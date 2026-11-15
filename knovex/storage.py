@@ -21,12 +21,12 @@ ALLOWED_MIME_TYPES = {
     "text/comma-separated-values",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     "application/msword",
-    "application/octet-stream",
-    "application/zip",
-    "application/x-zip-compressed",
+    "application/octet-stream",   # kept: browsers sometimes send this for DOCX
     "application/wps-office.docx",
     "application/vnd.ms-word",
     "application/x-msword",
+    # Note: application/zip and application/x-zip-compressed removed — DOCX is ZIP-based
+    # but its correct MIME is the full OOXML type above. Generic zip is too broad.
 }
 
 
@@ -71,10 +71,12 @@ async def save_uploaded_file(tenant_id: str, file: UploadFile) -> Tuple[Path, st
         )
 
     mime_type = file.content_type or "application/octet-stream"
-    if mime_type not in ALLOWED_MIME_TYPES and file_ext not in ALLOWED_EXTENSIONS:
+    # Reject if MIME type is not recognized AND it's not a generic browser fallback.
+    # Using OR here: reject when MIME is bad — extension check already ran above.
+    if mime_type not in ALLOWED_MIME_TYPES:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid MIME type '{mime_type}' for document upload"
+            detail=f"Invalid MIME type '{mime_type}' for document upload. Allowed: PDF, DOCX, CSV, TXT, MD"
         )
 
     tenant_dir = get_tenant_upload_dir(tenant_id)

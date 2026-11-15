@@ -5,12 +5,13 @@ Implements Auth, Tenant-isolated Documents, and Chat endpoints.
 
 import asyncio
 from functools import lru_cache
+import html
 import logging
 import uuid
 from typing import List, Optional
 from pathlib import Path
 import redis.asyncio as aioredis
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Security, UploadFile, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, Security, UploadFile, status
 from fastapi.responses import StreamingResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import func, select, update
@@ -112,7 +113,11 @@ async def get_current_user(
     # Rate limiting check
     allowed, _ = await check_rate_limit(redis, identifier=token_data.user_id, limit=settings.RATE_LIMIT_REQUESTS_PER_MINUTE)
     if not allowed:
-        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="Rate limit exceeded")
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Rate limit exceeded. Please wait before making another request.",
+            headers={"Retry-After": str(settings.RATE_LIMIT_WINDOW_SECONDS)},
+        )
 
     user = await db.get(User, token_data.user_id)
     if not user or not user.is_active:
@@ -136,8 +141,23 @@ async def require_admin(current_user: User = Depends(get_current_user)) -> User:
 # ---------------------------------------------------------
 
 @router.post("/auth/register", response_model=TokenResponse)
-async def register(payload: RegisterRequest, db: AsyncSession = Depends(get_async_db)):
+async def register(
+    request: Request,
+    payload: RegisterRequest,
+    db: AsyncSession = Depends(get_async_db),
+    redis: Optional[aioredis.Redis] = Depends(get_redis),
+):
     """Registers a new tenant organization or joins an existing one with admin or member role."""
+    # IP-based brute-force protection for registration (10 attempts per minute per IP)
+    client_ip = request.client.host if request.client else "unknown"
+    allowed, _ = await check_rate_limit(redis, identifier=f"auth_register:{client_ip}", limit=10, window_seconds=60)
+    if not allowed:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many registration attempts. Please wait 60 seconds.",
+            headers={"Retry-After": "60"},
+        )
+
     clean_org_name = payload.organization_name.strip()
     if not clean_org_name:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Organization name is required")
@@ -182,8 +202,23 @@ async def register(payload: RegisterRequest, db: AsyncSession = Depends(get_asyn
 
 
 @router.post("/auth/join", response_model=TokenResponse)
-async def join_organization(payload: JoinRequest, db: AsyncSession = Depends(get_async_db)):
+async def join_organization(
+    request: Request,
+    payload: JoinRequest,
+    db: AsyncSession = Depends(get_async_db),
+    redis: Optional[aioredis.Redis] = Depends(get_redis),
+):
     """Allows a user to join an existing organization using its unique Org Code."""
+    # IP-based brute-force protection for join (10 attempts per minute per IP)
+    client_ip = request.client.host if request.client else "unknown"
+    allowed, _ = await check_rate_limit(redis, identifier=f"auth_join:{client_ip}", limit=10, window_seconds=60)
+    if not allowed:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many join attempts. Please wait 60 seconds.",
+            headers={"Retry-After": "60"},
+        )
+
     code = payload.org_code.strip()
     if not code:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Organization code is required")
@@ -229,8 +264,23 @@ async def join_organization(payload: JoinRequest, db: AsyncSession = Depends(get
 
 
 @router.post("/auth/login", response_model=TokenResponse)
-async def login(payload: LoginRequest, db: AsyncSession = Depends(get_async_db)):
+async def login(
+    request: Request,
+    payload: LoginRequest,
+    db: AsyncSession = Depends(get_async_db),
+    redis: Optional[aioredis.Redis] = Depends(get_redis),
+):
     """Authenticates user and returns JWT access token."""
+    # IP-based brute-force protection for login (20 attempts per minute per IP)
+    client_ip = request.client.host if request.client else "unknown"
+    allowed, _ = await check_rate_limit(redis, identifier=f"auth_login:{client_ip}", limit=20, window_seconds=60)
+    if not allowed:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many login attempts. Please wait 60 seconds.",
+            headers={"Retry-After": "60"},
+        )
+
     res = await db.execute(select(User).where(User.email == payload.email))
     user = res.scalar_one_or_none()
     if not user or not verify_password(payload.password, user.hashed_password):
@@ -532,7 +582,7 @@ async def chat_query(
         conv = Conversation(
             tenant_id=current_user.tenant_id,
             user_id=current_user.id,
-            title=payload.message[:50],
+            title=html.escape(payload.message[:50]),  # sanitize to prevent stored XSS in future admin panels
         )
         db.add(conv)
         await db.flush()
@@ -611,7 +661,7 @@ async def chat_stream(
         conv = Conversation(
             tenant_id=current_user.tenant_id,
             user_id=current_user.id,
-            title=payload.message[:50],
+            title=html.escape(payload.message[:50]),  # sanitize to prevent stored XSS in future admin panels
         )
         db.add(conv)
         await db.flush()
@@ -780,5 +830,5 @@ async def delete_conversation(
 
 @router.get("/health")
 async def health_check():
-    """System health check endpoint."""
-    return {"status": "ok", "app": settings.APP_NAME, "env": settings.APP_ENV}
+    """Minimal health check for load balancers and uptime monitors. No internals exposed."""
+    return {"status": "ok"}

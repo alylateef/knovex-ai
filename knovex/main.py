@@ -68,13 +68,18 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS middleware
+# CORS middleware — explicit origins only; wildcard + credentials is both rejected by browsers
+# and a security anti-pattern (any origin could probe the API unauthenticated).
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://knovex.duckdns.org",
+        "http://localhost:5173",   # Vite dev server
+        "http://localhost:3000",
+    ],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
 )
 
 # Standard Request Tracing & Timing Middleware (assigns and logs X-Request-ID and execution time)

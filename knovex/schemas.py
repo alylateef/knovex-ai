@@ -42,7 +42,8 @@ class JoinRequest(BaseModel):
     email: EmailStr
     password: str = Field(..., min_length=8)
     full_name: str = Field(default="", max_length=128)
-    role: Optional[str] = Field(default="user", pattern="^(admin|user)$")
+    # Note: role is intentionally NOT accepted from client — joining users are always
+    # assigned "user" role server-side. Removes the attack surface of privilege escalation.
 
 
 class UserOut(BaseModel):
