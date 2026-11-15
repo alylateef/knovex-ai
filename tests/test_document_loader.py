@@ -140,6 +140,34 @@ def test_docx_parsing_and_table_preservation():
             temp_path.unlink()
 
 
+def test_docx_page_break_and_pagination():
+    import docx
+
+    doc = docx.Document()
+    doc.add_paragraph("Content on Page 1.")
+    doc.add_page_break()
+    doc.add_paragraph("Content on Page 2 after explicit break.")
+
+    temp_path = Path(tempfile.gettempdir()) / "test_multipage_doc.docx"
+    doc.save(str(temp_path))
+
+    try:
+        chunks = parse_and_chunk_document(
+            file_path=temp_path,
+            document_id="doc-docx-multi",
+            tenant_id="tenant-xyz",
+        )
+
+        assert len(chunks) >= 2
+        pages = [c.metadata.get("page") for c in chunks]
+        assert 1 in pages
+        assert 2 in pages
+        assert chunks[-1].metadata.get("total_pages") >= 2
+    finally:
+        if temp_path.exists():
+            temp_path.unlink()
+
+
 def test_csv_parsing_and_header_preservation():
     csv_content = (
         "Name,Role,Department,Salary\n"

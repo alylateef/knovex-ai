@@ -105,16 +105,38 @@ def parse_and_chunk_document(
         import docx
 
         doc = docx.Document(str(file_path))
-        total_pages = 1
+        current_page = 1
+        chars_on_page = 0
+        PAGE_CHAR_THRESHOLD = 2500  # ~450-500 words standard A4 single-spaced page
+
+        def _has_page_break(element) -> bool:
+            for node in element.iter():
+                tag = node.tag.lower()
+                if tag.endswith("lastrenderedpagebreak"):
+                    return True
+                if tag.endswith("br"):
+                    for k, v in node.attrib.items():
+                        if k.lower().endswith("type") and str(v).lower() == "page":
+                            return True
+            return False
 
         # Sequential extraction: iterate through document body elements in order
         for child in doc.element.body.iterchildren():
+            if _has_page_break(child):
+                current_page += 1
+                chars_on_page = 0
+
             if child.tag.endswith("p"):
                 # Extract paragraph text
                 text = "".join(node.text for node in child.iter() if node.tag.endswith("t") and node.text).strip()
                 if text:
+                    chars_on_page += len(text)
+                    if chars_on_page >= PAGE_CHAR_THRESHOLD:
+                        current_page += 1
+                        chars_on_page = len(text)
+
                     p_chunks = text_splitter.split_documents([
-                        Document(page_content=text, metadata={"page": 1})
+                        Document(page_content=text, metadata={"page": current_page})
                     ])
                     all_split_docs.extend(p_chunks)
 
@@ -141,17 +163,36 @@ def parse_and_chunk_document(
 
                     table_md = "\n".join(md_lines).strip()
                     if table_md:
+                        chars_on_page += len(table_md)
+                        if chars_on_page >= PAGE_CHAR_THRESHOLD:
+                            current_page += 1
+                            chars_on_page = len(table_md)
+
                         all_split_docs.append(
-                            Document(page_content=table_md, metadata={"page": 1, "is_table": True})
+                            Document(page_content=table_md, metadata={"page": current_page, "is_table": True})
                         )
+
+        total_pages = max(1, current_page)
 
         # Safety fallback: if iterchildren() extracted no chunks, use standard doc.paragraphs
         if not all_split_docs and doc.paragraphs:
-            full_text = "\n\n".join(p.text.strip() for p in doc.paragraphs if p.text.strip())
-            if full_text:
-                all_split_docs = text_splitter.split_documents([
-                    Document(page_content=full_text, metadata={"page": 1})
+            fallback_page = 1
+            fallback_chars = 0
+            for p in doc.paragraphs:
+                p_text = p.text.strip()
+                if not p_text:
+                    continue
+                fallback_chars += len(p_text)
+                if fallback_chars >= PAGE_CHAR_THRESHOLD:
+                    fallback_page += 1
+                    fallback_chars = len(p_text)
+
+                p_chunks = text_splitter.split_documents([
+                    Document(page_content=p_text, metadata={"page": fallback_page})
                 ])
+                all_split_docs.extend(p_chunks)
+
+            total_pages = max(1, fallback_page)
 
     elif file_ext == ".csv":
         import csv
