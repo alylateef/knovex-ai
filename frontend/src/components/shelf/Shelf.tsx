@@ -87,7 +87,9 @@ export const Shelf: React.FC = () => {
               {user?.organization_name || user?.email.split('@')[1] || 'workspace'}
             </span>
             <span className="text-xs font-mono text-muted">·</span>
-            <span className="text-xs font-mono text-secondary capitalize shrink-0">{user?.role || 'user'}</span>
+            <span className="text-xs font-mono text-secondary capitalize shrink-0">
+              {user?.role === 'admin' ? 'Admin' : 'Member'}
+            </span>
           </div>
         </div>
 
@@ -151,7 +153,7 @@ export const Shelf: React.FC = () => {
                     : 'border-line text-muted bg-surface'
                 }`}
               >
-                {user?.role || 'user'}
+                {user?.role === 'admin' ? 'admin' : 'member'}
               </span>
             </div>
             {user?.org_code && (

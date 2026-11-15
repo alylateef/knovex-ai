@@ -66,7 +66,7 @@ export const ThreadDesk: React.FC = () => {
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const tuneRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const messages = activeThreadId
     ? (messagesByThread[activeThreadId] ?? [])
@@ -98,7 +98,7 @@ export const ThreadDesk: React.FC = () => {
   // Re-focus input after thread switch
   useEffect(() => {
     if (!isLoadingHistory) {
-      inputRef.current?.focus();
+      textareaRef.current?.focus();
     }
   }, [activeThreadId, isLoadingHistory]);
 
@@ -120,8 +120,25 @@ export const ThreadDesk: React.FC = () => {
     const q = input.trim();
     if (!q || isSubmitting || isDocProcessing) return;
     setInput('');
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+    }
     setIsTuneOpen(false);
     void ask(q, topK, mode);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit(e);
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInput(e.target.value);
+    // Auto-adjust height to content (capped by max-h)
+    e.target.style.height = 'auto';
+    e.target.style.height = `${Math.min(e.target.scrollHeight, 140)}px`;
   };
 
   return (
@@ -153,25 +170,28 @@ export const ThreadDesk: React.FC = () => {
       <div className="p-2.5 md:px-6 md:pb-3 md:pt-2 border-t border-line bg-surface/90 backdrop-blur shrink-0 relative">
         <form onSubmit={handleSubmit} className="max-w-prose mx-auto">
           {/* Main unified compact input bar with futuristic blue border */}
-          <div className="relative flex items-center bg-bg border border-mark/45 shadow-[0_0_12px_rgba(37,99,235,0.07)] dark:shadow-[0_0_14px_rgba(217,119,87,0.15)] rounded-lg px-2.5 py-1.5 transition-all duration-200 hover:border-mark/70 focus-within:border-mark focus-within:ring-2 focus-within:ring-mark/20 focus-within:shadow-[0_0_16px_rgba(37,99,235,0.15)] dark:focus-within:shadow-[0_0_16px_rgba(217,119,87,0.22)]">
-            <input
-              ref={inputRef}
-              type="text"
+          <div className="relative flex items-end bg-bg border border-mark/45 shadow-[0_0_12px_rgba(37,99,235,0.07)] dark:shadow-[0_0_14px_rgba(217,119,87,0.15)] rounded-lg px-2.5 py-1.5 transition-all duration-200 hover:border-mark/70 focus-within:border-mark focus-within:ring-2 focus-within:ring-mark/20 focus-within:shadow-[0_0_16px_rgba(37,99,235,0.15)] dark:focus-within:shadow-[0_0_16px_rgba(217,119,87,0.22)]">
+            <textarea
+              ref={textareaRef}
+              rows={1}
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
               disabled={isSubmitting}
               placeholder={
                 isSubmitting
                   ? 'Searching documents & verifying claims…'
                   : isDocProcessing
                   ? 'Processing file… you can type, sending unlocks when ready'
-                  : 'Ask a question about your documents…'
+                  : docs.length === 0
+                  ? 'Upload a document from the left sidebar to start querying…'
+                  : 'Ask a question about your documents… (Shift+Enter for newline)'
               }
-              className="flex-1 py-1 px-1 bg-transparent text-ink text-xs font-sans placeholder:text-muted focus:outline-none disabled:opacity-50 min-w-0"
+              className="flex-1 py-1 px-1 bg-transparent text-ink text-xs font-sans placeholder:text-muted focus:outline-none disabled:opacity-50 min-w-0 resize-none max-h-36 overflow-y-auto leading-relaxed custom-scrollbar"
             />
 
             {/* Actions cluster inside input */}
-            <div className="flex items-center space-x-1.5 shrink-0 ml-1.5">
+            <div className="flex items-center space-x-1.5 shrink-0 ml-1.5 pb-0.5">
               {/* Subtle RAG tuning button */}
               <div className="relative" ref={tuneRef}>
                 <button

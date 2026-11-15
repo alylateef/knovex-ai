@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import { useDocsStore } from '../../stores/docsStore.ts';
 import { useAuthStore } from '../../stores/authStore.ts';
@@ -12,6 +12,7 @@ function formatSize(bytes: number): string {
 
 export const DocumentsList: React.FC = () => {
   const { docs, isLoading, deleteDoc } = useDocsStore();
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const user = useAuthStore((s) => s.user);
   const isAdmin = user?.role === 'admin';
 
@@ -43,14 +44,38 @@ export const DocumentsList: React.FC = () => {
                 {doc.filename}
               </span>
               {isAdmin && (
-                <button
-                  type="button"
-                  onClick={() => deleteDoc(doc.id)}
-                  title="Delete document"
-                  className="text-muted hover:text-danger opacity-0 group-hover:opacity-100 transition-opacity p-0.5 cursor-pointer"
-                >
-                  <Trash2 size={13} strokeWidth={1.5} />
-                </button>
+                confirmDeleteId === doc.id ? (
+                  <div className="flex items-center gap-1.5 text-[11px] font-mono bg-elevated/90 px-1.5 py-0.5 rounded border border-line shrink-0">
+                    <span className="text-danger font-semibold">Delete?</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        deleteDoc(doc.id);
+                        setConfirmDeleteId(null);
+                      }}
+                      className="text-danger hover:underline font-bold cursor-pointer"
+                    >
+                      Yes
+                    </button>
+                    <span className="text-muted">·</span>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDeleteId(null)}
+                      className="text-secondary hover:text-ink cursor-pointer"
+                    >
+                      No
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDeleteId(doc.id)}
+                    title="Delete document"
+                    className="text-muted hover:text-danger opacity-0 group-hover:opacity-100 transition-opacity p-0.5 cursor-pointer shrink-0"
+                  >
+                    <Trash2 size={13} strokeWidth={1.5} />
+                  </button>
+                )
               )}
             </div>
 
