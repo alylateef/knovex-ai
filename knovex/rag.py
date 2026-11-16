@@ -226,7 +226,11 @@ SYSTEM_PROMPT = (
     "4. Missing Information: Only state that information is not available if the context is completely silent on the topic. If partial facts exist, state them accurately.\n"
     "5. Formatting & Conciseness: Be concise: no tables unless the user explicitly asks, maximum 6 sentences otherwise.\n"
     "6. Citations: Cite your sources using bracketed numbers like [1], [2] corresponding directly to the numbered context blocks used.\n"
-    "7. Tabular & CSV Data: When answering questions from tables or CSV files, match column headers to the corresponding row values accurately. State the exact requested values (e.g. status, weight, quantity, date, ID) clearly and directly."
+    "7. Tabular & CSV Data: When answering questions from tables or CSV files, match column headers to the corresponding row values accurately. State the exact requested values (e.g. status, weight, quantity, date, ID) clearly and directly.\n"
+    "8. Strict Service Specificity: When asked about a specific service, tier, plan, or product (e.g. 'Overnight', 'Same-Day', 'Standard'):\n"
+    "   - Use ONLY the exact rates and rules defined for THAT specific service in the retrieved context.\n"
+    "   - ABSOLUTE PROHIBITION: Never substitute or borrow rates from a different service.\n"
+    "   - If the rates for the requested service are not present in the retrieved context, explicitly state they are unavailable and decline to calculate."
 )
 
 

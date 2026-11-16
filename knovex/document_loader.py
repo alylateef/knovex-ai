@@ -120,7 +120,14 @@ def parse_and_chunk_document(
                             return True
             return False
 
-        # Sequential extraction: iterate through document body elements in order
+        # Sequential extraction: accumulate paragraphs per page, then split cohesively.
+        # Tables are kept as separate atomic Documents (preserving is_table metadata).
+        # This ensures heading + intro prose + rate table all land in nearby/overlapping
+        # chunks, dramatically improving retrieval for compound queries.
+        page_prose: dict = {}   # {page_num: [paragraph_text, ...]}
+        page_tables: dict = {}  # {page_num: [table_md, ...]}
+        recent_heading: str = ""
+
         for child in doc.element.body.iterchildren():
             if _has_page_break(child):
                 current_page += 1
@@ -135,10 +142,11 @@ def parse_and_chunk_document(
                         current_page += 1
                         chars_on_page = len(text)
 
-                    p_chunks = text_splitter.split_documents([
-                        Document(page_content=text, metadata={"page": current_page})
-                    ])
-                    all_split_docs.extend(p_chunks)
+                    # Track last heading for table context injection
+                    if len(text) < 120 or (text and text[0].isdigit()):
+                        recent_heading = text
+
+                    page_prose.setdefault(current_page, []).append(text)
 
             elif child.tag.endswith("tbl"):
                 # Extract table as structured Markdown
@@ -161,16 +169,37 @@ def parse_and_chunk_document(
                         padded = r + [""] * (col_count - len(r)) if len(r) < col_count else r[:col_count]
                         md_lines.append("| " + " | ".join(padded) + " |")
 
-                    table_md = "\n".join(md_lines).strip()
-                    if table_md:
-                        chars_on_page += len(table_md)
+                    raw_table_md = "\n".join(md_lines).strip()
+                    if raw_table_md:
+                        chars_on_page += len(raw_table_md)
                         if chars_on_page >= PAGE_CHAR_THRESHOLD:
                             current_page += 1
-                            chars_on_page = len(table_md)
+                            chars_on_page = len(raw_table_md)
 
-                        all_split_docs.append(
-                            Document(page_content=table_md, metadata={"page": current_page, "is_table": True})
-                        )
+                        # Prepend the most recent section heading so the table chunk
+                        # inherits semantic context even when retrieved in isolation
+                        if recent_heading:
+                            table_md = f"### {recent_heading}\n\n{raw_table_md}"
+                        else:
+                            table_md = raw_table_md
+
+                        page_tables.setdefault(current_page, []).append(table_md)
+
+        # After iterating, split accumulated prose per page then append table chunks
+        all_pages = sorted(set(list(page_prose.keys()) + list(page_tables.keys())))
+        for p_num in all_pages:
+            prose_parts = page_prose.get(p_num, [])
+            if prose_parts:
+                page_text = "\n\n".join(prose_parts)
+                p_chunks = text_splitter.split_documents([
+                    Document(page_content=page_text, metadata={"page": p_num})
+                ])
+                all_split_docs.extend(p_chunks)
+
+            for tmd in page_tables.get(p_num, []):
+                all_split_docs.append(
+                    Document(page_content=tmd, metadata={"page": p_num, "is_table": True})
+                )
 
         total_pages = max(1, current_page)
 
