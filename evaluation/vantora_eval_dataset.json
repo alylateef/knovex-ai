@@ -1,0 +1,452 @@
+[
+  {
+    "id": 1,
+    "category": "direct_lookup",
+    "question": "What is the probation period for employees in grades L1 to L4 compared with L5 and above?",
+    "ground_truth": "3 months for grades L1 to L4 and 6 months for grades L5 and above. Probation may be extended once by up to 3 months, only with the written approval of the HR Director.",
+    "expected_doc": "Vantora_Employee_Handbook_v4.2.pdf",
+    "expected_page": 2,
+    "is_answerable": true
+  },
+  {
+    "id": 2,
+    "category": "direct_lookup",
+    "question": "What notice period applies to a confirmed employee in grades L6 to L7?",
+    "ground_truth": "90 calendar days.",
+    "expected_doc": "Vantora_Employee_Handbook_v4.2.pdf",
+    "expected_page": 2,
+    "is_answerable": true
+  },
+  {
+    "id": 3,
+    "category": "direct_lookup",
+    "question": "What are the core working hours?",
+    "ground_truth": "10:00 to 16:00. Employees may start between 08:00 and 10:00 provided they complete at least 8 working hours per day.",
+    "expected_doc": "Vantora_Employee_Handbook_v4.2.pdf",
+    "expected_page": 3,
+    "is_answerable": true
+  },
+  {
+    "id": 4,
+    "category": "direct_lookup",
+    "question": "How long is the Friday Jumu'ah break and when is it?",
+    "ground_truth": "90 minutes, from 12:45 to 14:15. It is a paid break.",
+    "expected_doc": "Vantora_Employee_Handbook_v4.2.pdf",
+    "expected_page": 3,
+    "is_answerable": true
+  },
+  {
+    "id": 5,
+    "category": "direct_lookup",
+    "question": "How many days of annual leave do grades L5 to L7 get per year?",
+    "ground_truth": "25 working days per year (grades L1 to L4 get 21 working days).",
+    "expected_doc": "Vantora_Employee_Handbook_v4.2.pdf",
+    "expected_page": 3,
+    "is_answerable": true
+  },
+  {
+    "id": 6,
+    "category": "direct_lookup",
+    "question": "What is the casual leave entitlement and its limits?",
+    "ground_truth": "8 days per year, with a maximum of 3 consecutive days. Casual leave is not carried forward.",
+    "expected_doc": "Vantora_Employee_Handbook_v4.2.pdf",
+    "expected_page": 3,
+    "is_answerable": true
+  },
+  {
+    "id": 7,
+    "category": "direct_lookup",
+    "question": "How long is paid maternity leave and when can it begin?",
+    "ground_truth": "90 calendar days, fully paid. It may begin up to 3 weeks before the expected delivery date.",
+    "expected_doc": "Vantora_Employee_Handbook_v4.2.pdf",
+    "expected_page": 3,
+    "is_answerable": true
+  },
+  {
+    "id": 8,
+    "category": "direct_lookup",
+    "question": "What is the Hajj leave policy?",
+    "ground_truth": "21 calendar days, paid, once during employment. It is available after 3 completed years of service. Umrah must be taken from annual leave.",
+    "expected_doc": "Vantora_Employee_Handbook_v4.2.pdf",
+    "expected_page": 3,
+    "is_answerable": true
+  },
+  {
+    "id": 9,
+    "category": "direct_lookup",
+    "question": "On which date is salary paid each month?",
+    "ground_truth": "On the 28th of each month, or on the preceding working day if the 28th is a weekend or public holiday.",
+    "expected_doc": "Vantora_Employee_Handbook_v4.2.pdf",
+    "expected_page": 4,
+    "is_answerable": true
+  },
+  {
+    "id": 10,
+    "category": "direct_lookup",
+    "question": "What percentage of basic salary do the employee and the company each contribute to the provident fund?",
+    "ground_truth": "The employee contributes 8% of basic salary and the Company matches 8%, starting after confirmation.",
+    "expected_doc": "Vantora_Employee_Handbook_v4.2.pdf",
+    "expected_page": 4,
+    "is_answerable": true
+  },
+  {
+    "id": 11,
+    "category": "direct_lookup",
+    "question": "What is the annual outpatient (OPD) medical limit for grades L1 to L3?",
+    "ground_truth": "PKR 60,000 per year.",
+    "expected_doc": "Vantora_Employee_Handbook_v4.2.pdf",
+    "expected_page": 4,
+    "is_answerable": true
+  },
+  {
+    "id": 12,
+    "category": "direct_lookup",
+    "question": "What is the hospitalisation limit per family per year for grades L6 to L7?",
+    "ground_truth": "PKR 1,500,000 per family per year.",
+    "expected_doc": "Vantora_Employee_Handbook_v4.2.pdf",
+    "expected_page": 4,
+    "is_answerable": true
+  },
+  {
+    "id": 13,
+    "category": "direct_lookup",
+    "question": "What is the reimbursement rate for using a personal vehicle for business travel?",
+    "ground_truth": "PKR 45 per kilometre.",
+    "expected_doc": "Vantora_Employee_Handbook_v4.2.pdf",
+    "expected_page": 5,
+    "is_answerable": true
+  },
+  {
+    "id": 14,
+    "category": "direct_lookup",
+    "question": "What is the annual learning budget per confirmed employee?",
+    "ground_truth": "PKR 80,000 per year. Unused amounts do not carry forward.",
+    "expected_doc": "Vantora_Employee_Handbook_v4.2.pdf",
+    "expected_page": 5,
+    "is_answerable": true
+  },
+  {
+    "id": 15,
+    "category": "direct_lookup",
+    "question": "When does a service bond apply to a training programme, and how long is it?",
+    "ground_truth": "When a single programme costs more than PKR 150,000. The bond is 12 months, and an employee who leaves within it repays the cost pro rata.",
+    "expected_doc": "Vantora_Employee_Handbook_v4.2.pdf",
+    "expected_page": 5,
+    "is_answerable": true
+  },
+  {
+    "id": 16,
+    "category": "direct_lookup",
+    "question": "What are the password length and rotation requirements?",
+    "ground_truth": "Minimum 14 characters, changed every 180 days.",
+    "expected_doc": "Vantora_Employee_Handbook_v4.2.pdf",
+    "expected_page": 5,
+    "is_answerable": true
+  },
+  {
+    "id": 17,
+    "category": "direct_lookup",
+    "question": "What was the resolution of support ticket TCK-20884 (dashboard failing for tenants with more than 2,000 vehicles)?",
+    "ground_truth": "An index was added on the vehicle_events table, reducing query time from 41 seconds to 1.8 seconds.",
+    "expected_doc": "Vantora_Support_Tickets_Sep2026.csv",
+    "expected_page": null,
+    "is_answerable": true
+  },
+  {
+    "id": 18,
+    "category": "direct_lookup",
+    "question": "What is the maximum value of a gift an employee may accept from a customer or supplier?",
+    "ground_truth": "PKR 10,000 per giver per calendar year. Anything above that must be declared to HR and surrendered. Cash gifts are never acceptable.",
+    "expected_doc": "Vantora_Employee_Handbook_v4.2.pdf",
+    "expected_page": 5,
+    "is_answerable": true
+  },
+  {
+    "id": 19,
+    "category": "direct_lookup",
+    "question": "Within how many days must the final settlement be paid after an employee's last working day?",
+    "ground_truth": "Within 30 days of the last working day. It covers salary, leave encashment, provident fund and any gratuity.",
+    "expected_doc": "Vantora_Employee_Handbook_v4.2.pdf",
+    "expected_page": 6,
+    "is_answerable": true
+  },
+  {
+    "id": 20,
+    "category": "direct_lookup",
+    "question": "What was Vantora's Q3 2026 revenue compared with the target?",
+    "ground_truth": "USD 4.82 million against a target of USD 4.60 million (+USD 0.22 million), up 11.8% from USD 4.31 million in Q2.",
+    "expected_doc": "Vantora_Q3_2026_Business_Review.docx",
+    "expected_page": 1,
+    "is_answerable": true
+  },
+  {
+    "id": 21,
+    "category": "direct_lookup",
+    "question": "What was ARR at the end of Q3 2026 and how many customers did the company have?",
+    "ground_truth": "ARR was USD 19.6 million from 412 customers.",
+    "expected_doc": "Vantora_Q3_2026_Business_Review.docx",
+    "expected_page": 1,
+    "is_answerable": true
+  },
+  {
+    "id": 22,
+    "category": "direct_lookup",
+    "question": "How many customers are on each service plan at the end of Q3 2026?",
+    "ground_truth": "Standard 214, Premium 138 and Enterprise 60 (412 in total).",
+    "expected_doc": "Vantora_Q3_2026_Business_Review.docx",
+    "expected_page": 2,
+    "is_answerable": true
+  },
+  {
+    "id": 23,
+    "category": "direct_lookup",
+    "question": "When is the SOC 2 Type II audit report targeted?",
+    "ground_truth": "31 January 2027. The audit window closes on 31 December 2026.",
+    "expected_doc": "Vantora_Q3_2026_Business_Review.docx",
+    "expected_page": 4,
+    "is_answerable": true
+  },
+  {
+    "id": 24,
+    "category": "direct_lookup",
+    "question": "What are the first-response and resolution targets for a P1 ticket?",
+    "ground_truth": "First response within 30 minutes and resolution within 4 hours.",
+    "expected_doc": "Vantora_Q3_2026_Business_Review.docx",
+    "expected_page": 3,
+    "is_answerable": true
+  },
+  {
+    "id": 25,
+    "category": "direct_lookup",
+    "question": "What is the daily allowance for domestic and international business travel?",
+    "ground_truth": "PKR 5,000 per day for domestic travel and USD 60 per day for international travel, covering meals and local transport. The international rate is USD 85 per day in Dubai, London, New York, Singapore and Zurich.",
+    "expected_doc": "Vantora_Employee_Handbook_v4.2.pdf",
+    "expected_page": 5,
+    "is_answerable": true
+  },
+  {
+    "id": 26,
+    "category": "multi_clause",
+    "question": "I am an L5 manager still on probation and want to resign. What notice period do I owe?",
+    "ground_truth": "14 calendar days. The probation notice period applies to all grades; L5 probation lasts 6 months, and the 60-day notice period applies only after confirmation.",
+    "expected_doc": "Vantora_Employee_Handbook_v4.2.pdf",
+    "expected_page": 2,
+    "is_answerable": true
+  },
+  {
+    "id": 27,
+    "category": "multi_clause",
+    "question": "I am an L3 engineer who worked on a Saturday. Will I be paid overtime?",
+    "ground_truth": "Only if the work was approved in writing before it was done: then 1.5 times the hourly basic rate, or alternatively a day off within 30 days. Grades L4 and above are not eligible for overtime pay.",
+    "expected_doc": "Vantora_Employee_Handbook_v4.2.pdf",
+    "expected_page": 3,
+    "is_answerable": true
+  },
+  {
+    "id": 28,
+    "category": "multi_clause",
+    "question": "I want to host a client dinner for 8 people at PKR 7,000 per head. Is that allowed?",
+    "ground_truth": "No. The limit is PKR 6,000 per head, and the total of PKR 56,000 exceeds PKR 30,000, so approval is also needed before the event.",
+    "expected_doc": "Vantora_Employee_Handbook_v4.2.pdf",
+    "expected_page": 5,
+    "is_answerable": true
+  },
+  {
+    "id": 29,
+    "category": "multi_clause",
+    "question": "An employee with 2 years of service leaves the company. What do they get from the provident fund and gratuity?",
+    "ground_truth": "They receive 50% of the Company's provident fund contribution, because 100% needs at least 3 completed years. Gratuity is not payable, because it requires 5 completed years of service.",
+    "expected_doc": "Vantora_Employee_Handbook_v4.2.pdf",
+    "expected_page": 4,
+    "is_answerable": true
+  },
+  {
+    "id": 30,
+    "category": "multi_clause",
+    "question": "Can an L5 manager fly business class on a 6-hour international flight?",
+    "ground_truth": "Not by default. Business class is for flights longer than 4 hours and for grades L6 to L7 only. L5 may travel business class only with CEO approval.",
+    "expected_doc": "Vantora_Employee_Handbook_v4.2.pdf",
+    "expected_page": 4,
+    "is_answerable": true
+  },
+  {
+    "id": 31,
+    "category": "multi_clause",
+    "question": "I have a PKR 40,000 expense. Who approves it, and what are the claim rules?",
+    "ground_truth": "The Department Head approves it (PKR 25,001 to PKR 100,000). Submit through the Vantora Expense Portal within 30 days with a receipt, since receipts are required above PKR 1,000. Approved claims are reimbursed within 10 working days.",
+    "expected_doc": "Vantora_Employee_Handbook_v4.2.pdf",
+    "expected_page": 4,
+    "is_answerable": true
+  },
+  {
+    "id": 32,
+    "category": "multi_clause",
+    "question": "Why did Standard plan customers receive no service credit for the 17 August 2026 outage?",
+    "ground_truth": "The outage lasted 167 minutes. The Standard plan (99.5% uptime) allowed 223 minutes of downtime in August, so no SLA breach occurred for Standard customers. Only Premium (44 minutes allowed) and Enterprise (22 minutes allowed) customers were entitled to credits.",
+    "expected_doc": "Vantora_Q3_2026_Business_Review.docx",
+    "expected_page": 3,
+    "is_answerable": true
+  },
+  {
+    "id": 33,
+    "category": "multi_clause",
+    "question": "What service credit did an Enterprise customer receive for the 17 August outage, and why?",
+    "ground_truth": "25% of its August fee. The outage lasted 167 minutes, well beyond the 22-minute monthly downtime allowance of the Enterprise plan (99.95% uptime).",
+    "expected_doc": "Vantora_Q3_2026_Business_Review.docx",
+    "expected_page": 3,
+    "is_answerable": true
+  },
+  {
+    "id": 34,
+    "category": "multi_clause",
+    "question": "Did ticket TCK-20891 (Bosphorus Logistics, P1 Courier API label bug) breach its SLA?",
+    "ground_truth": "Yes. The first response took 22 minutes, within the 30-minute P1 target, but resolution took 5.5 hours against the 4-hour P1 target, so the SLA was breached on resolution.",
+    "expected_doc": "Vantora_Support_Tickets_Sep2026.csv",
+    "expected_page": null,
+    "is_answerable": true
+  },
+  {
+    "id": 35,
+    "category": "multi_clause",
+    "question": "A customer needs single sign-on and 12 months of historical data retention. Which is the lowest plan that fits?",
+    "ground_truth": "Premium. SSO is included from Premium upward (not on Standard), and Premium retains 12 months of data, versus 90 days on Standard. Premium's list monthly fee starts from USD 3,400.",
+    "expected_doc": "Vantora_Q3_2026_Business_Review.docx",
+    "expected_page": 2,
+    "is_answerable": true
+  },
+  {
+    "id": 36,
+    "category": "roman_urdu",
+    "question": "Agar koi bina bataye 3 din office na aaye to kya process hota hai?",
+    "ground_truth": "3 or more consecutive working days of absence without notice or approval is treated as potential abandonment of employment and starts the disciplinary process in Section 9.3.",
+    "expected_doc": "Vantora_Employee_Handbook_v4.2.pdf",
+    "expected_page": 3,
+    "is_answerable": true
+  },
+  {
+    "id": 37,
+    "category": "roman_urdu",
+    "question": "Mera taxi ka 800 rupay ka receipt kho gaya, kya claim ho jayega?",
+    "ground_truth": "Haan. Receipts are required only for items above PKR 1,000. Un-receipted items are allowed up to PKR 5,000 per employee per month.",
+    "expected_doc": "Vantora_Employee_Handbook_v4.2.pdf",
+    "expected_page": 4,
+    "is_answerable": true
+  },
+  {
+    "id": 38,
+    "category": "roman_urdu",
+    "question": "Kya main customer ka error log debugging ke liye ChatGPT mein paste kar sakta hoon?",
+    "ground_truth": "No. Only AI assistants approved by IT Security may be used. Customer data, credentials, access tokens and proprietary source code must never be entered into public or unapproved AI tools.",
+    "expected_doc": "Vantora_Employee_Handbook_v4.2.pdf",
+    "expected_page": 5,
+    "is_answerable": true
+  },
+  {
+    "id": 39,
+    "category": "roman_urdu",
+    "question": "Laptop chori ho jaye to kitni der mein report karna hota hai?",
+    "ground_truth": "Within 2 hours, to the IT Service Desk (security@vantora.example, +92-21-5550-0199).",
+    "expected_doc": "Vantora_Employee_Handbook_v4.2.pdf",
+    "expected_page": 5,
+    "is_answerable": true
+  },
+  {
+    "id": 40,
+    "category": "roman_urdu",
+    "question": "Paternity leave kitni milti hai aur kab tak leni hoti hai?",
+    "ground_truth": "7 working days, fully paid. It must be taken within 30 days of the birth.",
+    "expected_doc": "Vantora_Employee_Handbook_v4.2.pdf",
+    "expected_page": 3,
+    "is_answerable": true
+  },
+  {
+    "id": 41,
+    "category": "roman_urdu",
+    "question": "Kya meri medical insurance mein mere walidain cover hain?",
+    "ground_truth": "Not by default. An employee can add each parent for an annual premium of PKR 45,000, deducted from salary in 12 equal instalments.",
+    "expected_doc": "Vantora_Employee_Handbook_v4.2.pdf",
+    "expected_page": 4,
+    "is_answerable": true
+  },
+  {
+    "id": 42,
+    "category": "roman_urdu",
+    "question": "Hybrid schedule mein hafte mein kitne din office aana parta hai?",
+    "ground_truth": "3 office days and 2 remote days per week. Tuesday, Wednesday and Thursday are the anchor office days for all teams.",
+    "expected_doc": "Vantora_Employee_Handbook_v4.2.pdf",
+    "expected_page": 3,
+    "is_answerable": true
+  },
+  {
+    "id": 43,
+    "category": "roman_urdu",
+    "question": "17 August ko outage kitni der raha aur wajah kya thi?",
+    "ground_truth": "2 hours 47 minutes (167 minutes), from 10:42 to 13:29 PKT. The TLS certificate on the API gateway expired because the automatic renewal job had been failing silently since the DNS provider migration on 2 August.",
+    "expected_doc": "Vantora_Q3_2026_Business_Review.docx",
+    "expected_page": 3,
+    "is_answerable": true
+  },
+  {
+    "id": 44,
+    "category": "roman_urdu",
+    "question": "Atlas 5.0 kab release hoga aur late kyun hua?",
+    "ground_truth": "General availability is on 14 December 2026. It was moved from 30 November to complete accuracy testing of the live ETA prediction model.",
+    "expected_doc": "Vantora_Q3_2026_Business_Review.docx",
+    "expected_page": 4,
+    "is_answerable": true
+  },
+  {
+    "id": 45,
+    "category": "roman_urdu",
+    "question": "Makran Coastal Shipping ka SSO wala ticket abhi tak open kyun hai?",
+    "ground_truth": "Ticket TCK-20900 is pending because SSO is available only on Premium and Enterprise plans. Makran is on the Standard plan and is evaluating an upgrade.",
+    "expected_doc": "Vantora_Support_Tickets_Sep2026.csv",
+    "expected_page": null,
+    "is_answerable": true
+  },
+  {
+    "id": 46,
+    "category": "negative_test",
+    "question": "What is the company's stock option (ESOP) policy for employees?",
+    "ground_truth": "The documents do not state this information.",
+    "expected_doc": null,
+    "expected_page": null,
+    "is_answerable": false
+  },
+  {
+    "id": 47,
+    "category": "negative_test",
+    "question": "How much is the monthly fuel allowance for L5 managers?",
+    "ground_truth": "The documents do not state a fuel allowance. The only allowance mentioned is the PKR 5,000 monthly internet and utility allowance for hybrid or remote employees.",
+    "expected_doc": null,
+    "expected_page": null,
+    "is_answerable": false
+  },
+  {
+    "id": 48,
+    "category": "negative_test",
+    "question": "What was Vantora's actual revenue for Q4 2026?",
+    "ground_truth": "The documents do not state Q4 2026 actuals. The business review only gives a Q4 2026 forecast of USD 5.20 million.",
+    "expected_doc": null,
+    "expected_page": null,
+    "is_answerable": false
+  },
+  {
+    "id": 49,
+    "category": "negative_test",
+    "question": "What is the paternity leave entitlement for employees of the UK office?",
+    "ground_truth": "The documents do not state this information. The handbook applies to the Karachi, Lahore and Islamabad offices and does not mention a UK office.",
+    "expected_doc": null,
+    "expected_page": null,
+    "is_answerable": false
+  },
+  {
+    "id": 50,
+    "category": "negative_test",
+    "question": "What is the base salary range for an L4 Lead?",
+    "ground_truth": "The documents do not state this information.",
+    "expected_doc": null,
+    "expected_page": null,
+    "is_answerable": false
+  }
+]
