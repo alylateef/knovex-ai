@@ -118,11 +118,105 @@ def get_vector_store():
 
 
 # ---------------------------------------------------------
+# Cross-Lingual Query Normalization (Roman Urdu / Hindi -> English)
+# ---------------------------------------------------------
+
+_ROMAN_URDU_MARKERS = {
+    "agar", "kya", "kyun", "kyu", "kaise", "kese", "kis", "kisko", "kise", "kab",
+    "kahan", "kitna", "kitni", "kitne", "bina", "baghair", "nahi", "nhi", "na",
+    "hota", "hoti", "hote", "hoga", "hogi", "hoge", "hai", "hain", "hoon", "hun",
+    "kar", "kare", "karein", "karna", "karni", "karne", "raha", "rahi", "rahe",
+    "aaye", "aata", "aati", "aate", "gaya", "gayi", "gaye", "wale", "wali", "wala",
+    "batao", "bataiye", "bata", "mujhe", "mujh", "apna", "apni", "apne", "unhe",
+    "unka", "unki", "unke", "iska", "iski", "iske", "inhe", "inka", "inki", "inke",
+    "mein", "main", "aur", "ya", "par", "pe", "se", "ko", "ka", "ki", "ke", "bhi",
+    "toh", "to", "yeh", "ye", "woh", "wo", "sab", "kuch", "bohot", "bahut", "sirf",
+    "paas", "baad", "pehle", "chahiye", "sakte", "sakti", "sakta", "kuchh",
+}
+
+_NORMALIZATION_CACHE: Dict[str, str] = {}
+
+
+def is_non_english_query(query: str) -> bool:
+    """
+    Fast heuristic (0.005 ms) to detect Roman Urdu, Hindi, or non-English script.
+    Returns True only when the query requires translation for English-document retrieval.
+    """
+    if not query or not query.strip():
+        return False
+
+    # 1. Non-ASCII script (Arabic/Urdu, Devanagari, Chinese, Cyrillic, etc.)
+    if any(ord(c) > 127 for c in query):
+        return True
+
+    # 2. Tokenize into words
+    import re
+    tokens = [w.lower() for w in re.findall(r"\b[a-zA-Z]+\b", query)]
+    if not tokens:
+        return False
+
+    # 3. Strong single-word triggers that are never English words
+    strong_triggers = {
+        "kya", "kyun", "kyu", "kaise", "bina", "baghair", "nahi", "nhi",
+        "hota", "hoga", "hogi", "hain", "karna", "batao", "bataiye", "chahiye",
+    }
+    if any(t in strong_triggers for t in tokens):
+        return True
+
+    # 4. Multi-marker check: 2 or more Roman Urdu stop words
+    matches = sum(1 for t in tokens if t in _ROMAN_URDU_MARKERS)
+    return matches >= 2
+
+
+def normalize_search_query(query: str) -> str:
+    """
+    Translates/normalizes cross-lingual queries (Roman Urdu, Urdu, Hindi, etc.)
+    into a concise English search phrase optimized for BM25 + dense retrieval.
+    For standard English queries, immediately returns the query untouched (0ms).
+    """
+    clean_q = query.strip()
+    if not clean_q or not is_non_english_query(clean_q):
+        return clean_q
+
+    # Check in-memory cache first
+    if clean_q in _NORMALIZATION_CACHE:
+        return _NORMALIZATION_CACHE[clean_q]
+
+    llm = get_chat_llm()
+    if llm is None:
+        return clean_q
+
+    prompt = (
+        "You are a search query normalizer for an English document search engine.\n"
+        "Convert the user's question into a concise English search phrase (3 to 10 words) "
+        "optimized for keyword and semantic retrieval.\n"
+        "Preserve numbers, specific terms, and key conditions.\n"
+        "Return ONLY the English search phrase, with no quotes, preamble, or punctuation."
+    )
+
+    try:
+        response = llm.invoke([
+            SystemMessage(content=prompt),
+            HumanMessage(content=clean_q),
+        ])
+        translated = response.content.strip().strip('"').strip("'")
+        if translated and len(translated) > 2:
+            logger.info(f"Query normalized for retrieval: '{clean_q}' -> '{translated}'")
+            _NORMALIZATION_CACHE[clean_q] = translated
+            return translated
+    except Exception as e:
+        logger.warning(f"Query normalization failed, falling back to original query: {e}")
+
+    return clean_q
+
+
+# ---------------------------------------------------------
 # LangGraph Workflow State & Nodes
 # ---------------------------------------------------------
 
-class RAGState(TypedDict):
+class RAGState(TypedDict, total=False):
     question: str
+    search_query: str
     tenant_id: str
     rerank: bool
     retrieved_docs: List[Document]
@@ -132,10 +226,17 @@ class RAGState(TypedDict):
     citations: List[Dict[str, Any]]
 
 
+def normalize_query_node(state: RAGState) -> Dict[str, Any]:
+    """Node 0: Pre-retrieval cross-lingual query normalization."""
+    q = state.get("question", "")
+    sq = normalize_search_query(q)
+    return {"search_query": sq}
+
+
 def retrieve_node(state: RAGState) -> Dict[str, Any]:
     """Node 1: Tenant-isolated hybrid retrieval via LangChain VectorStoreRetriever."""
     tenant_id = state["tenant_id"]
-    query = state["question"]
+    query = state.get("search_query") or state.get("question", "")
     store = get_vector_store()
 
     retriever = store.as_retriever(
@@ -175,7 +276,7 @@ def rerank_node(state: RAGState) -> Dict[str, Any]:
     top_docs: List[Document] = []
     if state.get("rerank", True):
         try:
-            query = state["question"]
+            query = state.get("search_query") or state.get("question", "")
             encoder = get_cross_encoder()
             # Pass full chunk content so CrossEncoder scores the entire text accurately
             pairs = [[query, doc.page_content] for doc in docs]
@@ -516,13 +617,15 @@ def build_rag_graph() -> Any:
     """Builds and compiles the LangGraph StateGraph workflow."""
     workflow = StateGraph(RAGState)
 
+    workflow.add_node("normalize_query", normalize_query_node)
     workflow.add_node("retrieve", retrieve_node)
     workflow.add_node("rerank", rerank_node)
     workflow.add_node("assess_evidence", assess_evidence_node)
     workflow.add_node("generate_answer", generate_answer_node)
     workflow.add_node("decline_to_answer", decline_to_answer_node)
 
-    workflow.set_entry_point("retrieve")
+    workflow.set_entry_point("normalize_query")
+    workflow.add_edge("normalize_query", "retrieve")
     workflow.add_edge("retrieve", "rerank")
     workflow.add_edge("rerank", "assess_evidence")
     workflow.add_conditional_edges(
@@ -549,6 +652,7 @@ def run_rag_pipeline(question: str, tenant_id: str, rerank: bool = True) -> Dict
     """Synchronous/convenience wrapper to run the LangGraph RAG pipeline."""
     initial_state: RAGState = {
         "question": question,
+        "search_query": question,
         "tenant_id": tenant_id,
         "rerank": rerank,
         "retrieved_docs": [],
@@ -575,15 +679,26 @@ def stream_rag_pipeline(question: str, tenant_id: str, rerank: bool = True):
     """
     import time
 
+    # 0. Query normalization for cross-lingual / Roman Urdu queries (0ms for English)
+    t_norm_start = time.perf_counter()
+    search_query = normalize_search_query(question)
+    norm_ms = max(0, int((time.perf_counter() - t_norm_start) * 1000))
+
     # 1. Retrieve candidates via hybrid search
     t_ret_start = time.perf_counter()
-    retrieve_res = retrieve_node({"tenant_id": tenant_id, "question": question})
+    retrieve_res = retrieve_node({"tenant_id": tenant_id, "question": question, "search_query": search_query})
     docs = retrieve_res.get("retrieved_docs", [])
     retrieval_ms = max(1, int((time.perf_counter() - t_ret_start) * 1000))
 
     # 2. CrossEncoder Rerank
     t_rerank_start = time.perf_counter()
-    rerank_res = rerank_node({"tenant_id": tenant_id, "question": question, "rerank": rerank, "retrieved_docs": docs})
+    rerank_res = rerank_node({
+        "tenant_id": tenant_id,
+        "question": question,
+        "search_query": search_query,
+        "rerank": rerank,
+        "retrieved_docs": docs,
+    })
     reranked_docs = rerank_res.get("reranked_docs", [])
     rerank_ms = max(1, int((time.perf_counter() - t_rerank_start) * 1000)) if rerank else 0
 
@@ -591,6 +706,8 @@ def stream_rag_pipeline(question: str, tenant_id: str, rerank: bool = True):
         "retrieval_ms": retrieval_ms,
         "rerank_ms": rerank_ms,
     }
+    if norm_ms > 0:
+        server_timings["norm_ms"] = norm_ms
 
     # 3. Assess evidence
     evidence_res = assess_evidence_node({"reranked_docs": reranked_docs})

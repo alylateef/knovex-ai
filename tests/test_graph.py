@@ -60,3 +60,21 @@ def test_citation_accuracy_verification():
 
     assert verify_citation_accuracy(valid_citations, retrieved_docs) == 1.0
     assert verify_citation_accuracy(invalid_citations, retrieved_docs) == 0.0
+
+
+def test_cross_lingual_query_detection():
+    from knovex.rag import is_non_english_query, normalize_search_query
+
+    # English queries should return False immediately (0ms overhead)
+    assert not is_non_english_query("What happens if an employee is absent for three consecutive days?")
+    assert not is_non_english_query("What does a 2.5 kg Overnight parcel cost, including fuel surcharge?")
+    assert not is_non_english_query("Knovex AI multi-tenant isolation")
+
+    # Roman Urdu / Hindi queries should return True
+    assert is_non_english_query("Agar koi bina bataye teen din office na aaye to kya hota hai?")
+    assert is_non_english_query("overnight parcel ka rate kitna hai?")
+    assert is_non_english_query("mujhe batao company ki leave policy kya hai")
+
+    # English normalization fallback / bypass check
+    english_q = "What is the refund timeline?"
+    assert normalize_search_query(english_q) == english_q
