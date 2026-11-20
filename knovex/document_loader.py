@@ -8,6 +8,26 @@ from knovex.config import get_settings
 settings = get_settings()
 
 
+def _is_section_heading(text: str) -> bool:
+    """
+    Heuristic: a paragraph is a section heading when it is short and
+    either starts with a digit (numbered section) or is written in ALL CAPS.
+    Keeps false-positive rate low; misses are harmless (breadcrumb stays
+    as the previous heading).
+    """
+    stripped = text.strip()
+    if not stripped or len(stripped) > 120:
+        return False
+    return stripped[0].isdigit() or stripped.isupper()
+
+
+def _build_breadcrumb(filename: str, heading: str = "") -> str:
+    """Return a one-line breadcrumb prefix to prepend to a prose chunk."""
+    if heading:
+        return f"[{filename} > {heading}]"
+    return f"[{filename}]"
+
+
 def parse_and_chunk_document(
     file_path: Path,
     document_id: str,
@@ -77,8 +97,12 @@ def parse_and_chunk_document(
 
                 prose_text = "".join(prose_parts).strip()
                 if prose_text:
+                    breadcrumb = _build_breadcrumb(filename, f"Page {page_num}")
                     prose_chunks = text_splitter.split_documents([
-                        Document(page_content=prose_text, metadata={"page": page_num})
+                        Document(
+                            page_content=f"{breadcrumb}\n\n{prose_text}",
+                            metadata={"page": page_num},
+                        )
                     ])
                     all_split_docs.extend(prose_chunks)
 
@@ -86,8 +110,12 @@ def parse_and_chunk_document(
                 # Standard text page: identical to original behavior
                 page_text = page.get_text().strip()
                 if page_text:
+                    breadcrumb = _build_breadcrumb(filename, f"Page {page_num}")
                     page_chunks = text_splitter.split_documents([
-                        Document(page_content=page_text, metadata={"page": page_num})
+                        Document(
+                            page_content=f"{breadcrumb}\n\n{page_text}",
+                            metadata={"page": page_num},
+                        )
                     ])
                     all_split_docs.extend(page_chunks)
 
@@ -99,6 +127,10 @@ def parse_and_chunk_document(
         loader = TextLoader(str(file_path), encoding="utf-8")
         raw_docs = loader.load()
         total_pages = 1
+        breadcrumb = _build_breadcrumb(filename)
+        for d in raw_docs:
+            if d.page_content.strip():
+                d.page_content = f"{breadcrumb}\n\n{d.page_content}"
         all_split_docs = text_splitter.split_documents(raw_docs)
 
     elif file_ext == ".docx":
@@ -202,15 +234,27 @@ def parse_and_chunk_document(
                     Document(page_content=rich_table_content, metadata={"page": t_page, "is_table": True})
                 )
 
-        # 2. Accumulate prose per page and split with text_splitter for standard narrative passages
+        # 2. Accumulate prose per page and split with text_splitter for standard narrative passages.
+        # Track the last section heading seen on or before each page so the breadcrumb is accurate.
         page_prose: dict = {}
+        page_last_heading: dict = {}  # page_num -> last heading text seen up to that page
+        running_heading = ""
         for el in raw_elements:
             if el["kind"] == "p":
+                if _is_section_heading(el["text"]):
+                    running_heading = el["text"]
+                page_last_heading[el["page"]] = running_heading
                 page_prose.setdefault(el["page"], []).append(el["text"])
 
         for p_num, p_texts in sorted(page_prose.items()):
+            heading = page_last_heading.get(p_num, "")
+            breadcrumb = _build_breadcrumb(filename, heading)
+            page_text = "\n\n".join(p_texts)
             p_chunks = text_splitter.split_documents([
-                Document(page_content="\n\n".join(p_texts), metadata={"page": p_num})
+                Document(
+                    page_content=f"{breadcrumb}\n\n{page_text}",
+                    metadata={"page": p_num},
+                )
             ])
             all_split_docs.extend(p_chunks)
 
