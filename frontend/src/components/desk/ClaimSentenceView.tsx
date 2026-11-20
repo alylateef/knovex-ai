@@ -122,7 +122,7 @@ export const ClaimSentenceView: React.FC<ClaimSentenceViewProps> = ({
       </ReactMarkdown>
 
       {sentence.citations && sentence.citations.length > 0 && (
-        <span className="inline-flex items-center gap-1 ml-1 mt-0.5 align-middle select-none">
+        <div className="flex flex-wrap items-center gap-1.5 mt-2.5 mb-1.5 select-none">
           {sentence.citations.map((chunkId) => {
             const chunk = chunks[chunkId];
             if (!chunk) return null;
@@ -156,7 +156,7 @@ export const ClaimSentenceView: React.FC<ClaimSentenceViewProps> = ({
               </button>
             );
           })}
-        </span>
+        </div>
       )}
     </div>
   );

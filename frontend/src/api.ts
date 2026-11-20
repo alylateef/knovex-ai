@@ -401,9 +401,11 @@ export async function apiAskQuestion(payload: {
           : accumulatedText.split(/\n\s*\n/).filter(Boolean))
       : [];
 
-    const sentences: ClaimSentence[] = (rawBlocks.length > 0 ? rawBlocks : [accumulatedText || '']).map((blockText, bIdx) => ({
+    const blocks = rawBlocks.length > 0 ? rawBlocks : [accumulatedText || ''];
+    const lastIdx = blocks.length - 1;
+    const sentences: ClaimSentence[] = blocks.map((blockText, bIdx) => ({
       text: blockText,
-      citations: !abstained && bIdx === 0 ? chunkIds : [],
+      citations: !abstained && bIdx === lastIdx ? chunkIds : [],
     }));
 
     const parsed = parseAnswer({
@@ -473,9 +475,11 @@ export async function apiAskQuestion(payload: {
           : raw.answer.split(/\n\s*\n/).filter(Boolean))
       : [];
 
-    const sentences: ClaimSentence[] = (rawBlocks.length > 0 ? rawBlocks : [raw.answer || '']).map((blockText, bIdx) => ({
+    const blocks = rawBlocks.length > 0 ? rawBlocks : [raw.answer || ''];
+    const lastIdx = blocks.length - 1;
+    const sentences: ClaimSentence[] = blocks.map((blockText, bIdx) => ({
       text: blockText,
-      citations: !abstained && bIdx === 0 ? chunkIds : [],
+      citations: !abstained && bIdx === lastIdx ? chunkIds : [],
     }));
 
     const parsed = parseAnswer({
