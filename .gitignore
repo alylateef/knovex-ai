@@ -57,3 +57,9 @@ htmlcov/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Evaluation data (contains live API responses)
+evaluation/ragas_run_records.json
+evaluation/reports/*.csv
+evaluation/reports/*.html
+
