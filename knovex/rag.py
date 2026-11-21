@@ -407,58 +407,57 @@ def _stitch_adjacent_chunks(docs: List[Document]) -> List[Document]:
     """
     Post-rerank neighbor stitching (pure Python, ~0.1 ms, zero extra I/O).
 
-    When two consecutive *selected* chunks are adjacent siblings from the same
-    document page (same source + same page + chunk_index n and n+1), merge
-    them into a single context block.  This heals the boundary-cut problem
-    where a policy premise lands in chunk N and its condition in chunk N+1,
-    neither alone ranking high enough to be selected on its own merits.
+    When consecutive *selected* chunks are adjacent siblings from the same
+    document page (same source + same page + sequential chunk_indices), merge
+    them into a single context block. This heals the boundary-cut problem
+    where a policy premise lands in chunk N, its condition in N+1, and exceptions
+    in N+2.
 
     Rules:
-    - Operates on the already-sorted (document-order) list produced by
-      format_context().  Never modifies the original Document objects.
-    - Citation metadata is kept from the FIRST chunk of a merged pair so
-      page references stay accurate.
-    - Only merges pairs; does not chain-merge triplets (keeps context tight).
-    - Table chunks (is_table=True) are intentionally included — if a table
-      and its immediately following prose chunk are both selected and adjacent
-      by chunk_index, stitching them adds the explanatory paragraph that
-      CrossEncoder would otherwise never see at query time.
+    - Operates on the already-sorted (document-order) list produced by format_context().
+    - Citation metadata is kept from the FIRST chunk of a merged group so page references stay accurate.
+    - Chain-merges contiguous siblings up to a safe length ceiling (2,500 chars) to prevent context bloating.
+    - Table chunks (is_table=True) are preserved and stitched with following prose if adjacent.
     """
     if len(docs) <= 1:
         return docs
 
     stitched: List[Document] = []
-    skip_next = False
+    current_doc: Optional[Document] = None
+    current_end_idx: Optional[int] = None
+    MAX_STITCH_CHARS = 2500
 
-    for i, doc in enumerate(docs):
-        if skip_next:
-            skip_next = False
+    for doc in docs:
+        if current_doc is None:
+            current_doc = doc
+            current_end_idx = doc.metadata.get("chunk_index")
             continue
 
-        if i + 1 < len(docs):
-            nxt = docs[i + 1]
-            same_source = doc.metadata.get("source") == nxt.metadata.get("source")
-            same_page = doc.metadata.get("page") == nxt.metadata.get("page")
-            cur_idx = doc.metadata.get("chunk_index")
-            nxt_idx = nxt.metadata.get("chunk_index")
-            adjacent = (
-                isinstance(cur_idx, int)
-                and isinstance(nxt_idx, int)
-                and nxt_idx == cur_idx + 1
+        same_source = current_doc.metadata.get("source") == doc.metadata.get("source")
+        same_page = current_doc.metadata.get("page") == doc.metadata.get("page")
+        cur_idx = doc.metadata.get("chunk_index")
+        adjacent = (
+            isinstance(current_end_idx, int)
+            and isinstance(cur_idx, int)
+            and cur_idx == current_end_idx + 1
+        )
+        combined_len = len(current_doc.page_content) + len(doc.page_content) + 2
+
+        if same_source and same_page and adjacent and combined_len <= MAX_STITCH_CHARS:
+            merged_content = current_doc.page_content.rstrip() + "\n\n" + doc.page_content.lstrip()
+            # Retain the initial chunk's metadata (e.g. initial chunk_index, page, source)
+            current_doc = Document(
+                page_content=merged_content,
+                metadata=current_doc.metadata,
             )
+            current_end_idx = cur_idx
+        else:
+            stitched.append(current_doc)
+            current_doc = doc
+            current_end_idx = cur_idx
 
-            if same_source and same_page and adjacent:
-                merged_content = doc.page_content.rstrip() + "\n\n" + nxt.page_content.lstrip()
-                stitched.append(
-                    Document(
-                        page_content=merged_content,
-                        metadata=doc.metadata,  # first chunk's metadata for citation
-                    )
-                )
-                skip_next = True
-                continue
-
-        stitched.append(doc)
+    if current_doc is not None:
+        stitched.append(current_doc)
 
     return stitched
 
