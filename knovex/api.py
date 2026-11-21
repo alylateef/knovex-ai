@@ -696,7 +696,10 @@ async def chat_stream(
                 await asyncio.sleep(0)
             elif event["type"] == "done":
                 final_answer = event.get("answer", "")
-                final_citations = event.get("citations", []) or all_metadata_citations
+                # Use only the citations the LLM explicitly referenced in its answer.
+                # Do NOT fall back to all_metadata_citations — that would fabricate citations
+                # for answers that contain no [n] markers (refusals, off-topic responses).
+                final_citations = event.get("citations", [])
                 final_evidence = event.get("evidence_status", "sufficient")
                 yield f"data: {json.dumps(event)}\n\n"
                 await asyncio.sleep(0)

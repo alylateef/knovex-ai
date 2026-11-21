@@ -134,7 +134,19 @@ _ROMAN_URDU_MARKERS = {
     "paas", "baad", "pehle", "chahiye", "sakte", "sakti", "sakta", "kuchh",
 }
 
-_NORMALIZATION_CACHE: Dict[str, str] = {}
+# Bounded LRU cache for cross-lingual query normalization.
+# maxsize=4096 caps memory at ~4096 × ~200 bytes ≈ 800 KB worst-case.
+# When full, the least-recently-used entry is evicted automatically.
+_NORMALIZATION_CACHE: "OrderedDict[str, str]"
+
+
+def _init_normalization_cache() -> "OrderedDict[str, str]":
+    from collections import OrderedDict
+    return OrderedDict()
+
+
+_NORMALIZATION_CACHE = _init_normalization_cache()
+_NORMALIZATION_CACHE_MAXSIZE = 4096
 
 
 def is_non_english_query(query: str) -> bool:
@@ -178,8 +190,9 @@ def normalize_search_query(query: str) -> str:
     if not clean_q or not is_non_english_query(clean_q):
         return clean_q
 
-    # Check in-memory cache first
+    # Check bounded LRU cache first — O(1) hit, moves entry to MRU position
     if clean_q in _NORMALIZATION_CACHE:
+        _NORMALIZATION_CACHE.move_to_end(clean_q)
         return _NORMALIZATION_CACHE[clean_q]
 
     llm = get_chat_llm()
@@ -202,7 +215,11 @@ def normalize_search_query(query: str) -> str:
         translated = response.content.strip().strip('"').strip("'")
         if translated and len(translated) > 2:
             logger.info(f"Query normalized for retrieval: '{clean_q}' -> '{translated}'")
+            # Insert into bounded LRU cache; evict oldest entry if at capacity
             _NORMALIZATION_CACHE[clean_q] = translated
+            _NORMALIZATION_CACHE.move_to_end(clean_q)
+            if len(_NORMALIZATION_CACHE) > _NORMALIZATION_CACHE_MAXSIZE:
+                _NORMALIZATION_CACHE.popitem(last=False)  # evict LRU (first item)
             return translated
     except Exception as e:
         logger.warning(f"Query normalization failed, falling back to original query: {e}")
@@ -236,6 +253,17 @@ def normalize_query_node(state: RAGState) -> Dict[str, Any]:
 def retrieve_node(state: RAGState) -> Dict[str, Any]:
     """Node 1: Tenant-isolated hybrid retrieval via LangChain VectorStoreRetriever."""
     tenant_id = state["tenant_id"]
+
+    # Guard: tenant_id must be a non-empty string. An empty or None tenant_id
+    # would produce a Qdrant MatchValue("") filter that silently returns 0 results,
+    # making every query look like "no documents found". Fail loudly instead.
+    if not tenant_id or not isinstance(tenant_id, str) or not tenant_id.strip():
+        logger.error(f"retrieve_node called with invalid tenant_id: {tenant_id!r}")
+        raise ValueError(
+            f"Invalid tenant_id passed to RAG pipeline: {tenant_id!r}. "
+            "This is an authentication or routing bug — tenant must be resolved before retrieval."
+        )
+
     query = state.get("search_query") or state.get("question", "")
     store = get_vector_store()
 
@@ -287,14 +315,25 @@ def rerank_node(state: RAGState) -> Dict[str, Any]:
             # Min-max normalise scores to [0, 1] within this batch.
             # CrossEncoder ms-marco logits are extreme (-10 to +10), sigmoid maps
             # them all to ~0 or ~1. Min-max keeps the relative spread meaningful.
+            # Edge case: when all scores are equal (single-topic corpus), span collapses
+            # to 0. We assign a uniform 0.5 score instead of dividing by zero or forcing
+            # 0.0 (which would mis-signal "irrelevant" for all chunks).
             raw = [float(s) for s in scores]
             lo, hi = min(raw), max(raw)
-            span = hi - lo if hi - lo > 1e-6 else 1.0
+            span = hi - lo
 
-            doc_scores = sorted(zip(docs, raw), key=lambda x: x[1], reverse=True)
-            for doc, score in doc_scores:
-                doc.metadata["rerank_score"] = round((score - lo) / span, 4)
-                top_docs.append(doc)
+            if span > 1e-6:
+                doc_scores = sorted(zip(docs, raw), key=lambda x: x[1], reverse=True)
+                for doc, score in doc_scores:
+                    doc.metadata["rerank_score"] = round((score - lo) / span, 4)
+                    top_docs.append(doc)
+            else:
+                # All chunks scored identically — preserve retrieval order, assign 0.5
+                # (a neutral score that passes evidence Gate B threshold of 0.10)
+                logger.debug("CrossEncoder scores are uniform (span<1e-6); preserving retrieval order.")
+                for doc in docs:
+                    doc.metadata["rerank_score"] = 0.5
+                    top_docs.append(doc)
         except Exception as e:
             logger.warning(f"Reranking failed or skipped: {e}")
             top_docs = list(docs)
@@ -499,12 +538,30 @@ def format_context(docs: List[Document], max_chars: int = 10000) -> Tuple[str, D
 
 
 def extract_citations(answer: str, metadata_by_index: Dict[int, Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """Extracts [1], [2] citation indices from generated text and maps to chunk metadata."""
+    """
+    Extracts [1], [2] citation markers from generated text and maps them to chunk metadata.
+
+    Returns only the citations the LLM explicitly referenced in its answer.
+    If the LLM produced no citation markers (e.g. it wrote a refusal or a generic answer
+    without grounding), we return an empty list rather than fabricating citations from the
+    top chunks — fabricated citations erode user trust and are actively misleading.
+    """
     import re
-    used_indices = set(int(m) for m in re.findall(r"\[(\d+)\]", answer) if int(m) in metadata_by_index)
+    used_indices = {
+        int(m)
+        for m in re.findall(r"\[(\d+)\]", answer)
+        if int(m) in metadata_by_index
+    }
     if used_indices:
         return [metadata_by_index[idx] for idx in sorted(used_indices)]
-    return [metadata_by_index[idx] for idx in sorted(metadata_by_index.keys())[:3]]
+
+    # No citation markers found — do NOT fall back to arbitrary top chunks.
+    # An empty citation list correctly signals "answer not grounded in specific excerpts".
+    logger.debug(
+        "extract_citations: LLM answer contained no [n] citation markers. "
+        "Returning empty citations to avoid fabrication."
+    )
+    return []
 
 
 def get_chat_llm():
@@ -536,13 +593,41 @@ def get_chat_llm():
 
 
 def assess_evidence_node(state: RAGState) -> Dict[str, Any]:
-    """Node 3: Assess if retrieved documents contain sufficient evidence."""
+    """
+    Node 3: Assess whether retrieved chunks contain sufficient grounded evidence.
+
+    Two-gate quality check (both must pass):
+      Gate A — Volume: at least 300 characters of combined content. This filters out
+               trivially short or empty retrievals that cannot support a full answer.
+      Gate B — Relevance: at least one chunk must have a CrossEncoder rerank_score >= 0.10,
+               or reranking was disabled (score key absent). A batch of 12 semantically
+               unrelated chunks that all score near 0 should not trigger generation.
+
+    The old threshold (30 chars) was effectively no-op — almost any retrieval passed it,
+    causing the LLM to hallucinate confidently on irrelevant context.
+    """
     docs = state.get("reranked_docs", [])
     if not docs:
         return {"evidence_status": "insufficient"}
 
+    # Gate A: combined character volume
     combined_len = sum(len(d.page_content.strip()) for d in docs)
-    if combined_len < 30:
+    if combined_len < 300:
+        logger.info(
+            f"Evidence gate A failed: combined_len={combined_len} < 300. "
+            "Refusing to generate — insufficient context volume."
+        )
+        return {"evidence_status": "insufficient"}
+
+    # Gate B: at least one chunk with meaningful CrossEncoder relevance
+    # If rerank_score is absent (reranking was skipped), we give benefit of the doubt.
+    scores = [d.metadata.get("rerank_score") for d in docs]
+    scored_chunks = [s for s in scores if s is not None]
+    if scored_chunks and max(scored_chunks) < 0.10:
+        logger.info(
+            f"Evidence gate B failed: best rerank_score={max(scored_chunks):.4f} < 0.10. "
+            "All retrieved chunks are semantically distant from the query."
+        )
         return {"evidence_status": "insufficient"}
 
     return {"evidence_status": "sufficient"}
@@ -600,7 +685,7 @@ def generate_answer_node(state: RAGState) -> Dict[str, Any]:
         else:
             answer = "No LLM API key configured. Add GROQ_API_KEY in .env to enable live LLM generation."
 
-    citations = list(metadata_by_index.values())
+    citations = extract_citations(answer, metadata_by_index)
     return {"answer": answer, "citations": citations}
 
 
@@ -740,7 +825,10 @@ def stream_rag_pipeline(question: str, tenant_id: str, rerank: bool = True):
         yield {"type": "done", "answer": refusal_text, "citations": [], "evidence_status": "insufficient"}
         return
 
-    # 4. Format context blocks and yield initial metadata
+    # 4. Format context blocks and yield initial metadata.
+    # The `metadata` event sends ALL candidate source chunks upfront so the frontend
+    # can render source cards immediately while the LLM streams its answer.
+    # The final `done` event will carry only the citations the LLM actually referenced.
     context_str, metadata_by_index = format_context(reranked_docs)
     yield {
         "type": "metadata",
@@ -808,7 +896,9 @@ def stream_rag_pipeline(question: str, tenant_id: str, rerank: bool = True):
         yield {"type": "delta", "content": fallback}
 
     full_answer = "".join(full_answer_parts)
-    citations = list(metadata_by_index.values())
+    # Extract only citations the LLM explicitly referenced with [n] markers.
+    # This prevents fabricated citations when LLM writes a refusal or un-grounded answer.
+    citations = extract_citations(full_answer, metadata_by_index)
     llm_ms = max(10, int((time.perf_counter() - t_llm_start) * 1000))
 
     complete_timings = {
