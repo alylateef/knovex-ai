@@ -572,12 +572,23 @@ async def chat_query(
     db: AsyncSession = Depends(get_async_db),
 ):
     """Executes the LangGraph RAG pipeline and returns grounded answers with validated citations."""
-    # 1. Get or create conversation
+    # 1. Get or create conversation and fetch prior turn history for coreference resolution
     conv_id = payload.conversation_id
+    prior_chat_history = []
     if conv_id:
         conv = await db.get(Conversation, conv_id)
         if not conv or conv.tenant_id != current_user.tenant_id:
             raise HTTPException(status_code=404, detail="Conversation not found")
+        prior_res = await db.execute(
+            select(Message)
+            .where(Message.conversation_id == conv_id)
+            .order_by(Message.created_at.desc())
+            .limit(4)
+        )
+        prior_chat_history = [
+            {"role": m.role, "content": m.content}
+            for m in reversed(prior_res.scalars().all())
+        ]
     else:
         conv = Conversation(
             tenant_id=current_user.tenant_id,
@@ -593,11 +604,12 @@ async def chat_query(
     db.add(user_msg)
     await db.flush()
 
-    # 3. Run LangGraph RAG pipeline with tenant isolation
+    # 3. Run LangGraph RAG pipeline with tenant isolation and conversational context
     rag_result = run_rag_pipeline(
         question=payload.message,
         tenant_id=current_user.tenant_id,
         rerank=payload.rerank if payload.rerank is not None else True,
+        chat_history=prior_chat_history,
     )
 
     answer = rag_result.get("answer", "")
@@ -651,12 +663,23 @@ async def chat_stream(
     """Streams RAG generation tokens live over Server-Sent Events (SSE)."""
     import json
 
-    # 1. Get or create conversation
+    # 1. Get or create conversation and fetch prior turn history for coreference resolution
     conv_id = payload.conversation_id
+    prior_chat_history = []
     if conv_id:
         conv = await db.get(Conversation, conv_id)
         if not conv or conv.tenant_id != current_user.tenant_id:
             raise HTTPException(status_code=404, detail="Conversation not found")
+        prior_res = await db.execute(
+            select(Message)
+            .where(Message.conversation_id == conv_id)
+            .order_by(Message.created_at.desc())
+            .limit(4)
+        )
+        prior_chat_history = [
+            {"role": m.role, "content": m.content}
+            for m in reversed(prior_res.scalars().all())
+        ]
     else:
         conv = Conversation(
             tenant_id=current_user.tenant_id,
@@ -686,7 +709,12 @@ async def chat_stream(
         final_evidence = "sufficient"
         all_metadata_citations = []
 
-        for event in stream_rag_pipeline(question=question, tenant_id=tenant_id, rerank=rerank):
+        for event in stream_rag_pipeline(
+            question=question,
+            tenant_id=tenant_id,
+            rerank=rerank,
+            chat_history=prior_chat_history,
+        ):
             if event["type"] == "metadata":
                 all_metadata_citations = event.get("citations", [])
                 yield f"data: {json.dumps(event)}\n\n"

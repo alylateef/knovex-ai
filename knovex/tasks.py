@@ -11,13 +11,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 from sqlalchemy import select
+from qdrant_client.http import models as qmodels
 
 from knovex.config import get_settings
 from knovex.database import get_sync_db_context
 from knovex.document_loader import parse_and_chunk_document
 from knovex.models import Document, DocumentChunk, IngestionJob
 from knovex.observability import tenant_id_ctx
-from knovex.rag import get_vector_store
+from knovex.rag import get_vector_store, get_qdrant_client
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -65,60 +66,81 @@ def run_ingestion_pipeline(document_id: str, tenant_id: str) -> bool:
                 chunk_overlap=settings.CHUNK_OVERLAP,
             )
 
+            if not chunks:
+                raise ValueError(
+                    "No extractable text or tables found in this document. "
+                    "If this is a scanned PDF or photo document, digital text or OCR is required before indexing."
+                )
+
             if job:
                 job.progress_percent = 50
                 db.commit()
 
-            # 3. Upsert chunks into Qdrant
-            if chunks:
-                store = get_vector_store()
-                chunk_ids = [
-                    str(uuid.uuid5(uuid.NAMESPACE_URL, f"{document_id}/{c.metadata['chunk_index']}"))
-                    for c in chunks
-                ]
-                batch_size = 128
-                total_batches = (len(chunks) + batch_size - 1) // batch_size
-                for b_idx in range(total_batches):
-                    start = b_idx * batch_size
-                    end = min(start + batch_size, len(chunks))
-                    store.add_documents(documents=chunks[start:end], ids=chunk_ids[start:end])
-                    if job:
-                        # Scale progress from 50% to 90% across embedding batches
-                        job.progress_percent = 50 + int((b_idx + 1) / total_batches * 40)
-                        db.commit()
-
-                # 4. Save chunk records in PostgreSQL
-                # Remove any existing chunks for idempotency
-                existing_chunks = db.execute(
-                    select(DocumentChunk).where(DocumentChunk.document_id == document_id)
-                ).scalars().all()
-                for ec in existing_chunks:
-                    db.delete(ec)
-
-                chunk_records = [
-                    DocumentChunk(
-                        tenant_id=tenant_id,
-                        document_id=document_id,
-                        chunk_index=c.metadata.get("chunk_index", i),
-                        page_number=c.metadata.get("page", 1),
-                        content=c.page_content.replace("\x00", ""),
-                        qdrant_point_id=chunk_ids[i],
-                        char_count=len(c.page_content),
-                    )
-                    for i, c in enumerate(chunks)
-                ]
-                db.add_all(chunk_records)
-
-                total_pages_val = chunks[0].metadata.get("total_pages", 1) if (chunks and "total_pages" in chunks[0].metadata) else 1
-                doc.total_chunks = len(chunks)
-                doc.total_pages = total_pages_val
-
-                from sqlalchemy import update
-                db.execute(
-                    update(Document)
-                    .where(Document.id == document_id)
-                    .values(total_chunks=len(chunks), total_pages=total_pages_val)
+            # 3. Purge existing Qdrant points for this document to prevent 'ghost chunks'
+            try:
+                client = get_qdrant_client()
+                filter_cond = qmodels.Filter(
+                    must=[
+                        qmodels.FieldCondition(key="metadata.tenant_id", match=qmodels.MatchValue(value=tenant_id)),
+                        qmodels.FieldCondition(key="metadata.document_id", match=qmodels.MatchValue(value=document_id)),
+                    ]
                 )
+                client.delete(
+                    collection_name=settings.QDRANT_COLLECTION_NAME,
+                    points_selector=qmodels.FilterSelector(filter=filter_cond),
+                )
+            except Exception as e:
+                logger.warning(f"Failed to purge existing Qdrant points for {document_id}: {e}")
+
+            # 4. Upsert chunks into Qdrant
+            store = get_vector_store()
+            chunk_ids = [
+                str(uuid.uuid5(uuid.NAMESPACE_URL, f"{document_id}/{c.metadata['chunk_index']}"))
+                for c in chunks
+            ]
+            batch_size = 128
+            total_batches = (len(chunks) + batch_size - 1) // batch_size
+            for b_idx in range(total_batches):
+                start = b_idx * batch_size
+                end = min(start + batch_size, len(chunks))
+                store.add_documents(documents=chunks[start:end], ids=chunk_ids[start:end])
+                if job:
+                    # Scale progress from 50% to 90% across embedding batches
+                    job.progress_percent = 50 + int((b_idx + 1) / total_batches * 40)
+                    db.commit()
+
+            # 5. Save chunk records in PostgreSQL
+            # Remove any existing chunks for idempotency
+            existing_chunks = db.execute(
+                select(DocumentChunk).where(DocumentChunk.document_id == document_id)
+            ).scalars().all()
+            for ec in existing_chunks:
+                db.delete(ec)
+
+            chunk_records = [
+                DocumentChunk(
+                    tenant_id=tenant_id,
+                    document_id=document_id,
+                    chunk_index=c.metadata.get("chunk_index", i),
+                    page_number=c.metadata.get("page", 1),
+                    content=c.page_content.replace("\x00", ""),
+                    qdrant_point_id=chunk_ids[i],
+                    char_count=len(c.page_content),
+                )
+                for i, c in enumerate(chunks)
+            ]
+            db.add_all(chunk_records)
+
+            total_pages_val = chunks[0].metadata.get("total_pages", 1) if (chunks and "total_pages" in chunks[0].metadata) else 1
+            doc.total_chunks = len(chunks)
+            doc.total_pages = total_pages_val
+
+            from sqlalchemy import update
+            db.execute(
+                update(Document)
+                .where(Document.id == document_id)
+                .values(total_chunks=len(chunks), total_pages=total_pages_val)
+            )
 
             # 5. Mark as completed
             if job:
